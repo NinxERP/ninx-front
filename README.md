@@ -1,9 +1,21 @@
-# ninx-novofront
+<div align="center">
 
-Cliente desktop do sistema **Ninx** (ERP/POS para pequenos comércios), em **Tauri v2 + React
-+ TypeScript + Tailwind CSS**, substituindo o app `.NET MAUI` em `ninx-front`.
+# 🖥️ Ninx Novofront
 
-## Sobre o sistema Ninx
+**Cliente desktop do sistema Ninx (ERP/POS para pequenos comércios), em Tauri v2 + React +
+TypeScript + Tailwind CSS — substituindo o app `.NET MAUI` em `ninx-front`.**
+
+![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?logo=tauri&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)
+![License](https://img.shields.io/badge/licença-privado-lightgrey)
+
+</div>
+
+---
+
+## 🧩 Sobre o sistema Ninx
 
 Este repositório é um dos quatro que compõem o Ninx:
 
@@ -14,7 +26,7 @@ Este repositório é um dos quatro que compõem o Ninx:
 | [ninx-front](../ninx-front) | Cliente desktop antigo, em .NET MAUI — mantido só como referência de UI/UX e regras de negócio até a paridade funcional ser confirmada; não é mais editado. |
 | [ninx-signature](../ninx-signature) | Página pública onde o cliente final assina documentos de venda (QR code gerado aqui, fluxo de assinatura roda naquele app). |
 
-## Stack
+## 🛠️ Stack
 
 | Necessidade | Escolha | Por quê |
 |---|---|---|
@@ -32,7 +44,7 @@ Este repositório é um dos quatro que compõem o Ninx:
 | Roteamento | `react-router-dom` (`HashRouter`) | Tauri não tem roteador de arquivo; `HashRouter` evita depender de fallback de servidor dentro do bundle da app. |
 | Atualização automática | `@tauri-apps/plugin-updater` + `@tauri-apps/plugin-process` | Checagem/instalação de novas versões direto no app, ver seção própria abaixo. |
 
-## Setup
+## 🚀 Setup
 
 ```bash
 npm install
@@ -43,7 +55,10 @@ npm run build           # build de produção do front (tsc + vite build)
 npm run tauri build    # gera o instalador nativo (.msi/.exe no Windows)
 ```
 
-## Estrutura
+Extensões recomendadas no VS Code: `tauri-apps.tauri-vscode` e `rust-lang.rust-analyzer`
+(para trabalhar em `src-tauri`).
+
+## 🗂️ Estrutura
 
 ```
 src/
@@ -63,7 +78,7 @@ src/
 └── pages/          telas da aplicação (ver tabela abaixo)
 ```
 
-## Telas e rotas
+## 🧭 Telas e rotas
 
 | Rota | Tela | Observação |
 |---|---|---|
@@ -87,7 +102,7 @@ src/
 A tela `FeaturePage` do MAUI não foi portada: era código morto, sem nenhuma navegação
 apontando para ela (confirmado por busca no código-fonte antes da migração).
 
-## Estado e autenticação
+## 🔐 Estado e autenticação
 
 - **Sessão** (`AuthContext`): guarda o usuário decodificado do JWT (`src/lib/jwt.ts`) e o
   token — **só em memória, sem persistência em disco**. Fechar o app sempre exige novo
@@ -100,14 +115,14 @@ apontando para ela (confirmado por busca no código-fonte antes da migração).
 - **Cache de dados**: React Query, uma query key por domínio; mutações invalidam a query
   correspondente (ver qualquer arquivo em `src/services/`).
 
-## Layout sem scroll
+## 📐 Layout sem scroll
 
 Todas as telas cabem na viewport sem rolagem (`h-screen overflow-hidden` na raiz da app,
 cada tela organiza o próprio conteúdo com flexbox). A exceção deliberada é a tela de
 **Relatórios**, que pode rolar — usa a classe utilitária `.scroll-styled` (definida em
 `src/index.css`) para manter a barra de rolagem estilizada em vez da padrão do sistema.
 
-## Atualização automática (Tauri Updater)
+## 🔄 Atualização automática (Tauri Updater)
 
 Fluxo: após login bem-sucedido, `AppUpdateGate` chama `checkForUpdate()` uma vez por sessão.
 Se houver versão nova, `UpdateDialog` (modal shadcn) pergunta ao usuário; aceitando, baixa
@@ -122,19 +137,19 @@ Configuração em `src-tauri/tauri.conf.json` (`plugins.updater`):
   `<owner>/<repo>` pelo repositório real assim que ele existir no GitHub**, senão o updater
   nunca encontra uma versão nova.
 
-## Release / CI-CD
+## 📦 Release / CI-CD
 
-`.github/workflows/release.yml` builda e publica no GitHub Releases a cada tag `v*`
-(`git tag v0.1.0 && git push --tags`), assinando os artefatos do updater com
-`tauri-apps/tauri-action`. Requer estes secrets no repositório (Settings → Secrets and
-variables → Actions):
+`.github/workflows/release.yml` builda (Windows apenas — `.msi`/`.exe`) e publica no GitHub
+Releases a cada tag `v*` (`git tag v0.1.0 && git push --tags`), assinando os artefatos do
+updater com `tauri-apps/tauri-action`. Requer estes secrets no repositório (Settings →
+Secrets and variables → Actions):
 
 - `TAURI_PRIVATE_KEY` — conteúdo de `.tauri/ninx-novofront.key`.
 - `TAURI_KEY_PASSWORD` — senha da chave, se tiver sido gerada com uma (a atual não tem).
 
 `GITHUB_TOKEN` é automático, não precisa cadastrar.
 
-## Limitações conhecidas / próximos passos
+## ⚠️ Limitações conhecidas / próximos passos
 
 Registradas aqui para não ficarem escondidas — nenhuma delas quebra o fluxo principal:
 
