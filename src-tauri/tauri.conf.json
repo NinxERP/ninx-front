@@ -36,7 +36,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/maat-aug/ninx-novofront/releases/latest/download/latest.json"
+        "https://github.com/maat-aug/ninx-front/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc0RjlCMTZEMUE5MDcwNzYKUldSMmNKQWFiYkg1ZE5nNjRvdUZjNDVXaDdCeFdodk1aa1VVbjJKQkp2MEd6QWo5Y3prWERYS2UK"
     }

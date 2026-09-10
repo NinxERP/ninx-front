@@ -22,7 +22,7 @@ Este repositório é um dos quatro que compõem o Ninx:
 | Repositório | Papel |
 |---|---|
 | [ninx-api](../ninx-api) | Backend: autenticação, regras de negócio, dados. |
-| **ninx-novofront** (este) | Cliente desktop (ERP/POS) em Tauri v2 + React. |
+| **ninx-front** (este) | Cliente desktop (ERP/POS) em Tauri v2 + React. |
 | [ninx-front](../ninx-front) | Cliente desktop antigo, em .NET MAUI — mantido só como referência de UI/UX e regras de negócio até a paridade funcional ser confirmada; não é mais editado. |
 | [ninx-signature](../ninx-signature) | Página pública onde o cliente final assina documentos de venda (QR code gerado aqui, fluxo de assinatura roda naquele app). |
 
@@ -144,7 +144,7 @@ Releases a cada tag `v*` (`git tag v0.1.0 && git push --tags`), assinando os art
 updater com `tauri-apps/tauri-action`. Requer estes secrets no repositório (Settings →
 Secrets and variables → Actions):
 
-- `TAURI_PRIVATE_KEY` — conteúdo de `.tauri/ninx-novofront.key`.
+- `TAURI_PRIVATE_KEY` — conteúdo de `.tauri/ninx-front.key`.
 - `TAURI_KEY_PASSWORD` — senha da chave, se tiver sido gerada com uma (a atual não tem).
 
 `GITHUB_TOKEN` é automático, não precisa cadastrar.

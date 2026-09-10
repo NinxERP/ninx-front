@@ -1,5 +1,5 @@
 [package]
-name = "ninx-novofront"
+name = "ninx-front"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
