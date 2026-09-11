@@ -11,3 +11,5 @@ import {
 } from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Tooltip, Legend);
+
+ChartJS.defaults.plugins.legend.position = "bottom";

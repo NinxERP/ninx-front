@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,6 +8,7 @@ import { ExportButton } from "@/components/shared/ExportButton";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useGiroEstoque, useProdutosVencendo } from "@/services/relatorio";
 import type { Periodo } from "@/services/relatorio";
+import { ordenarProdutosParados } from "@/types/relatorio";
 
 export function EstoqueTab({ periodo }: { periodo: Periodo }) {
   const { data: giro, isLoading: isLoadingGiro } = useGiroEstoque(periodo);
@@ -15,7 +16,11 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
   const { data: vencendo, isLoading: isLoadingVencendo } = useProdutosVencendo(diasLimite);
 
   const giroPag = usePagedList(giro?.produtos);
-  const paradosPag = usePagedList(giro?.produtosParados);
+  const produtosParados = useMemo(
+    () => ordenarProdutosParados(giro?.produtosParados ?? []),
+    [giro?.produtosParados],
+  );
+  const paradosPag = usePagedList(produtosParados);
 
   if (isLoadingGiro || isLoadingVencendo) {
     return <p className="text-sm text-muted-foreground">Carregando...</p>;
@@ -27,7 +32,7 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
         <CardContent>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-medium">Giro de Estoque</p>
-            <ExportButton filename="giro-estoque.xlsx" sheets={[{ name: "Giro", rows: giro?.produtos ?? [] }]} />
+            <ExportButton filename="giro-estoque" sheets={[{ name: "Giro", rows: giro?.produtos ?? [] }]} />
           </div>
           <Table className="table-fixed">
             <TableHeader>
@@ -69,7 +74,7 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
         <CardContent>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-medium">Produtos Parados</p>
-            <ExportButton filename="produtos-parados.xlsx" sheets={[{ name: "Parados", rows: giro?.produtosParados ?? [] }]} />
+            <ExportButton filename="produtos-parados" sheets={[{ name: "Parados", rows: produtosParados }]} />
           </div>
           <Table className="table-fixed">
             <TableHeader>
@@ -122,7 +127,18 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
         <CardContent>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-medium">Produtos Vencendo</p>
-            <Input type="number" className="w-24" value={diasLimite} onChange={(e) => setDiasLimite(Number(e.target.value) || 30)} />
+            <div className="flex items-center gap-2">
+              <label htmlFor="dias-limite-vencimento" className="text-sm text-muted-foreground">
+                Vence em até (dias):
+              </label>
+              <Input
+                id="dias-limite-vencimento"
+                type="number"
+                className="w-24"
+                value={diasLimite}
+                onChange={(e) => setDiasLimite(Number(e.target.value) || 30)}
+              />
+            </div>
           </div>
           <Table className="table-fixed">
             <TableHeader>

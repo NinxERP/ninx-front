@@ -1,7 +1,10 @@
+import { useMemo } from "react";
 import "@/lib/chartSetup";
 import { Bar, Pie } from "react-chartjs-2";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusPill } from "@/components/shared/StatusPill";
+import { Pagination } from "@/components/shared/Pagination";
+import { usePagedList } from "@/hooks/usePagedList";
 import { useDashboard } from "@/services/relatorio";
 import type { Periodo } from "@/services/relatorio";
 
@@ -9,6 +12,11 @@ const CORES = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"]
 
 export function VisaoGeralTab({ periodo }: { periodo: Periodo }) {
   const { data, isLoading } = useDashboard(periodo);
+  const estoqueBaixoPag = usePagedList(data?.estoqueBaixo);
+  const produtosMaisVendidos = useMemo(
+    () => [...(data?.produtosMaisVendidos ?? [])].sort((a, b) => b.quantidadeVendida - a.quantidadeVendida),
+    [data?.produtosMaisVendidos],
+  );
 
   if (isLoading || !data) {
     return <p className="text-sm text-muted-foreground">Carregando...</p>;
@@ -46,23 +54,32 @@ export function VisaoGeralTab({ periodo }: { periodo: Periodo }) {
       <Card>
         <CardContent>
           <p className="mb-3 text-sm font-medium">Estoque Baixo</p>
-          {data.estoqueBaixo.length === 0 ? (
+          {estoqueBaixoPag.paginados.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum produto abaixo do mínimo.</p>
           ) : (
-            <div className="flex flex-col divide-y">
-              {data.estoqueBaixo.map((p) => (
-                <div key={p.produtoID} className="flex items-center justify-between gap-3 py-2 text-sm first:pt-0 last:pb-0">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate">{p.produtoNome}</span>
-                    <StatusPill
-                      tone={p.quantidadeAtual === 0 ? "danger" : "warning"}
-                      text={p.quantidadeAtual === 0 ? "Sem Estoque" : "Abaixo do Mín"}
-                    />
+            <>
+              <div className="flex flex-col divide-y">
+                {estoqueBaixoPag.paginados.map((p) => (
+                  <div key={p.produtoID} className="flex items-center justify-between gap-3 py-2 text-sm first:pt-0 last:pb-0">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="truncate">{p.produtoNome}</span>
+                      <StatusPill
+                        tone={p.quantidadeAtual === 0 ? "danger" : "warning"}
+                        text={p.quantidadeAtual === 0 ? "Sem Estoque" : "Abaixo do Mín"}
+                      />
+                    </div>
+                    <span className="shrink-0 text-muted-foreground">{p.quantidadeAtual} / mín. {p.quantidadeMinima}</span>
                   </div>
-                  <span className="shrink-0 text-muted-foreground">{p.quantidadeAtual} / mín. {p.quantidadeMinima}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <Pagination
+                paginaAtual={estoqueBaixoPag.pagina}
+                totalPaginas={estoqueBaixoPag.totalPaginas}
+                totalItens={estoqueBaixoPag.totalItens}
+                itemLabel="produtos"
+                onPageChange={estoqueBaixoPag.setPagina}
+              />
+            </>
           )}
         </CardContent>
       </Card>
@@ -74,14 +91,20 @@ export function VisaoGeralTab({ periodo }: { periodo: Periodo }) {
             {data.formasPagamento.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados no período.</p>
             ) : (
-              <Pie
-                data={{
-                  labels: data.formasPagamento.map((f) => f.formaPagamento),
-                  datasets: [
-                    { data: data.formasPagamento.map((f) => f.valor), backgroundColor: CORES },
-                  ],
-                }}
-              />
+              <div className="h-72">
+                <Pie
+                  data={{
+                    labels: data.formasPagamento.map((f) => f.formaPagamento),
+                    datasets: [
+                      { data: data.formasPagamento.map((f) => f.valor), backgroundColor: CORES },
+                    ],
+                  }}
+                  options={{
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { padding: 20 } } },
+                  }}
+                />
+              </div>
             )}
           </CardContent>
         </Card>
@@ -89,22 +112,24 @@ export function VisaoGeralTab({ periodo }: { periodo: Periodo }) {
         <Card>
           <CardContent>
             <p className="mb-3 text-sm font-medium">Produtos Mais Vendidos</p>
-            {data.produtosMaisVendidos.length === 0 ? (
+            {produtosMaisVendidos.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados no período.</p>
             ) : (
-              <Bar
-                data={{
-                  labels: data.produtosMaisVendidos.map((p) => p.produtoNome),
-                  datasets: [
-                    {
-                      label: "Quantidade",
-                      data: data.produtosMaisVendidos.map((p) => p.quantidadeVendida),
-                      backgroundColor: CORES[0],
-                    },
-                  ],
-                }}
-                options={{ indexAxis: "y" as const }}
-              />
+              <div className="h-72">
+                <Bar
+                  data={{
+                    labels: produtosMaisVendidos.map((p) => p.produtoNome),
+                    datasets: [
+                      {
+                        label: "Quantidade",
+                        data: produtosMaisVendidos.map((p) => p.quantidadeVendida),
+                        backgroundColor: CORES[0],
+                      },
+                    ],
+                  }}
+                  options={{ indexAxis: "y" as const, maintainAspectRatio: false }}
+                />
+              </div>
             )}
           </CardContent>
         </Card>

@@ -15,6 +15,7 @@ export function FinanceiroTab({ periodo }: { periodo: Periodo }) {
   const { data: limites, isLoading: isLoadingLimites } = useLimiteCredito();
 
   const margemPag = usePagedList(margem?.produtos);
+  const limitesPag = usePagedList(limites);
 
   if (isLoadingMargem || isLoadingAging || isLoadingLimites) {
     return <p className="text-sm text-muted-foreground">Carregando...</p>;
@@ -35,7 +36,7 @@ export function FinanceiroTab({ periodo }: { periodo: Periodo }) {
                   {
                     label: "Saldo devedor",
                     data: [aging.ate30Dias.valor, aging.de31a60Dias.valor, aging.acima60Dias.valor],
-                    backgroundColor: ["#22c55e", "#f59e0b", "#ef4444"],
+                    backgroundColor: "#6366f1",
                   },
                 ],
               }}
@@ -48,7 +49,7 @@ export function FinanceiroTab({ periodo }: { periodo: Periodo }) {
         <CardContent>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-medium">Margem por Produto</p>
-            <ExportButton filename="margem-produtos.xlsx" sheets={[{ name: "Margem", rows: margem?.produtos ?? [] }]} />
+            <ExportButton filename="margem-produtos" sheets={[{ name: "Margem", rows: margem?.produtos ?? [] }]} />
           </div>
           <Table className="table-fixed">
             <TableHeader>
@@ -99,12 +100,12 @@ export function FinanceiroTab({ periodo }: { periodo: Periodo }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!limites || limites.length === 0 ? (
+              {limitesPag.paginados.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
                 </TableRow>
               ) : (
-                limites.map((c) => (
+                limitesPag.paginados.map((c) => (
                   <TableRow key={c.clienteID}>
                     <TableCell className="truncate">{c.clienteNome}</TableCell>
                     <TableCell className="text-right">R$ {c.limiteCredito.toFixed(2)}</TableCell>
@@ -120,6 +121,13 @@ export function FinanceiroTab({ periodo }: { periodo: Periodo }) {
               )}
             </TableBody>
           </Table>
+          <Pagination
+            paginaAtual={limitesPag.pagina}
+            totalPaginas={limitesPag.totalPaginas}
+            totalItens={limitesPag.totalItens}
+            itemLabel="clientes"
+            onPageChange={limitesPag.setPagina}
+          />
         </CardContent>
       </Card>
     </div>

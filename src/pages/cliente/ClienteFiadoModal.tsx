@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { useCurrencyInput } from "@/hooks/useCurrencyInput";
+import { useAuth } from "@/context/AuthContext";
 import { useVendasCliente, useReceberPagamentoFiado, useReceberPagamentoGeralFiado } from "@/services/venda";
 import { useBaixarDocumentoPdf, useVerificarAssinatura } from "@/services/assinaturaEletronica";
 import { FormaPagamento } from "@/types";
@@ -91,6 +92,7 @@ export function ClienteFiadoModal({ cliente, onClose }: { cliente: ClienteRespon
   const receberIndividual = useReceberPagamentoFiado();
   const receberGeral = useReceberPagamentoGeralFiado();
   const baixar = useBaixarDocumentoPdf();
+  const { user } = useAuth();
 
   const [vendaExpandidaId, setVendaExpandidaId] = useState<number | null>(null);
   const [pagamento, setPagamento] = useState<{ vendaId: number | null; geral: boolean } | null>(null);
@@ -311,7 +313,9 @@ export function ClienteFiadoModal({ cliente, onClose }: { cliente: ClienteRespon
                                                 baixar.mutate({
                                                   guid: doc.documentoGuid,
                                                   assinado: doc.assinado,
-                                                  nomeArquivo: `${idx === 0 ? "VendaOriginal" : `Recibo${idx}`}_${cliente.nome}`,
+                                                  nomeArquivo: idx === 0 ? "VendaOriginal" : `Recibo${idx}`,
+                                                  comercioNome: user?.nomeComercio,
+                                                  clienteNome: cliente.nome,
                                                 })
                                               }
                                             >

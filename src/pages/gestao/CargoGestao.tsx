@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Pencil, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ export function CargoGestao() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: cargos, isLoading } = useCargos(user?.comercioId);
+  const cargosOrdenados = useMemo(() => [...(cargos ?? [])].sort((a, b) => b.peso - a.peso), [cargos]);
   const criar = useCriarCargo();
   const atualizar = useAtualizarCargo();
   const excluir = useExcluirCargo();
@@ -117,7 +118,7 @@ export function CargoGestao() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cargos.map((cargo) => (
+                {cargosOrdenados.map((cargo) => (
                   <TableRow key={cargo.cargoID}>
                     <TableCell>
                       <div className="flex items-center gap-2.5">

@@ -38,14 +38,14 @@ export function ComercioGestao() {
   useEffect(() => {
     if (!comercio) return;
     setNome(comercio.nomeComercio ?? "");
-    setCnpj(comercio.cnpj ?? "");
+    setCnpj(maskCnpj(comercio.cnpj ?? ""));
     setLogradouro(comercio.enderecoLogradouro ?? "");
-    setNumero(comercio.enderecoNumero ?? "");
+    setNumero(maskNumerico(comercio.enderecoNumero ?? ""));
     setComplemento(comercio.enderecoComplemento ?? "");
     setBairro(comercio.enderecoBairro ?? "");
     setCidade(comercio.enderecoCidade ?? "");
     setUf(comercio.enderecoUF ?? "");
-    setCep(comercio.enderecoCEP ?? "");
+    setCep(maskCep(comercio.enderecoCEP ?? ""));
     limiteCredito.reset(comercio.limiteCreditoPadrao ?? 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comercio]);

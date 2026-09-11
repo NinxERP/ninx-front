@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, ApiError } from "@/services/api/client";
+import { montarNomeArquivo } from "@/lib/exportFilename";
 import type { AssinaturaEletronicaResponse } from "@/types";
 
 function baixarBase64ComoPdf(base64: string, nomeArquivo: string) {
@@ -8,7 +9,7 @@ function baixarBase64ComoPdf(base64: string, nomeArquivo: string) {
   const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = nomeArquivo.replace(/[\\/:*?"<>|]/g, "").trim();
+  link.download = `${nomeArquivo}.pdf`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -41,12 +42,24 @@ export function useVerificarAssinatura() {
 
 export function useBaixarDocumentoPdf() {
   return useMutation({
-    mutationFn: async ({ guid, assinado, nomeArquivo }: { guid: string; assinado: boolean; nomeArquivo: string }) => {
+    mutationFn: async ({
+      guid,
+      assinado,
+      nomeArquivo,
+      comercioNome,
+      clienteNome,
+    }: {
+      guid: string;
+      assinado: boolean;
+      nomeArquivo: string;
+      comercioNome?: string;
+      clienteNome?: string;
+    }) => {
       const path = assinado ? `/api/AssinaturaEletronica/comercio/${guid}` : `/api/AssinaturaEletronica/${guid}`;
       const doc = await api.get<AssinaturaEletronicaResponse>(path);
       const base64 = assinado ? doc.documentoAssinadoBase64 : doc.documentoBase64;
       if (!base64) throw new Error("Documento indisponível para download.");
-      baixarBase64ComoPdf(base64, `${nomeArquivo}.pdf`);
+      baixarBase64ComoPdf(base64, montarNomeArquivo(nomeArquivo, { comercioNome, clienteNome }));
     },
     onSuccess: () => toast.success("PDF baixado com sucesso."),
     onError: (err) => toast.error(err instanceof ApiError ? err.message : "Erro ao baixar o PDF."),

@@ -180,6 +180,14 @@ export interface RelatorioGiroEstoqueResponse {
   produtosParados: ProdutoParadoResumo[];
 }
 
+export function ordenarProdutosParados(produtos: ProdutoParadoResumo[]) {
+  return [...produtos].sort((a, b) => {
+    if (a.diasSemVender == null) return 1;
+    if (b.diasSemVender == null) return -1;
+    return b.diasSemVender - a.diasSemVender;
+  });
+}
+
 export interface ProdutoVencendoResumo {
   produtoID: number;
   produtoNome: string;

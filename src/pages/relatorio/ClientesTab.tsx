@@ -22,13 +22,17 @@ export function ClientesTab() {
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="text-sm font-medium">Clientes Inativos</p>
           <div className="flex items-center gap-2">
+            <label htmlFor="dias-sem-comprar" className="text-sm text-muted-foreground">
+              Dias sem comprar:
+            </label>
             <Input
+              id="dias-sem-comprar"
               type="number"
               className="w-24"
               value={diasSemComprar}
               onChange={(e) => setDiasSemComprar(Number(e.target.value) || 30)}
             />
-            <ExportButton filename="clientes-inativos.xlsx" sheets={[{ name: "Inativos", rows: inativos ?? [] }]} />
+            <ExportButton filename="clientes-inativos" sheets={[{ name: "Inativos", rows: inativos ?? [] }]} />
           </div>
         </div>
         <Table className="table-fixed">

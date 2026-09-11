@@ -24,6 +24,7 @@ import {
   useProdutosVencendo,
 } from "@/services/relatorio";
 import type { Periodo } from "@/services/relatorio";
+import { ordenarProdutosParados } from "@/types/relatorio";
 
 const ABAS_BASE = ["Visão Geral", "Vendas", "Financeiro", "Estoque", "Clientes"] as const;
 type Aba = (typeof ABAS_BASE)[number] | "Comparativo";
@@ -54,7 +55,7 @@ export function Relatorio() {
     { name: "Aging Recebiveis", rows: aging?.vendas ?? [] },
     { name: "Limite de Credito", rows: limites ?? [] },
     { name: "Giro de Estoque", rows: giro?.produtos ?? [] },
-    { name: "Produtos Parados", rows: giro?.produtosParados ?? [] },
+    { name: "Produtos Parados", rows: ordenarProdutosParados(giro?.produtosParados ?? []) },
     { name: "Produtos Vencendo", rows: vencendo ?? [] },
     { name: "Clientes Inativos", rows: inativos ?? [] },
     { name: "Comparativo Comercios", rows: comparativo?.comercios ?? [] },
@@ -85,7 +86,7 @@ export function Relatorio() {
         </div>
         <div className="flex items-center gap-3">
           {aba !== "Clientes" && <PeriodoSelector periodo={periodo} onChange={setPeriodo} />}
-          <ExportButton filename="relatorios.xlsx" sheets={todosOsRelatorios} label="Exportar tudo" />
+          <ExportButton filename="relatorios" sheets={todosOsRelatorios} label="Exportar tudo" />
         </div>
       </div>
 

@@ -42,7 +42,7 @@ export function VendasTab({ periodo }: { periodo: Periodo }) {
         <CardContent>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-medium">Curva ABC de Produtos</p>
-            <ExportButton filename="curva-abc.xlsx" sheets={[{ name: "Curva ABC", rows: curvaAbc ?? [] }]} />
+            <ExportButton filename="curva-abc" sheets={[{ name: "Curva ABC", rows: curvaAbc ?? [] }]} />
           </div>
           <Table className="table-fixed">
             <TableHeader>
@@ -84,7 +84,7 @@ export function VendasTab({ periodo }: { periodo: Periodo }) {
         <CardContent>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-medium">Desempenho por Vendedor</p>
-            <ExportButton filename="desempenho-vendedores.xlsx" sheets={[{ name: "Vendedores", rows: vendedores ?? [] }]} />
+            <ExportButton filename="desempenho-vendedores" sheets={[{ name: "Vendedores", rows: vendedores ?? [] }]} />
           </div>
           <Table className="table-fixed">
             <TableHeader>
