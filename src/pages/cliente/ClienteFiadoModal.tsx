@@ -131,7 +131,15 @@ export function ClienteFiadoModal({ cliente, onClose }: { cliente: ClienteRespon
   };
 
   const pagamentoAssinado = () => {
-    if (documentoGuid) baixar.mutate({ guid: documentoGuid, assinado: true });
+    if (documentoGuid) {
+      baixar.mutate({
+        guid: documentoGuid,
+        assinado: true,
+        nomeArquivo: "ReciboPagamento",
+        comercioNome: user?.nomeComercio,
+        clienteNome: cliente.nome,
+      });
+    }
     setPagamento(null);
     setDocumentoGuid(null);
   };
