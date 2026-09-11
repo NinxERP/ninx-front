@@ -171,6 +171,8 @@ export interface ProdutoParadoResumo {
   produtoID: number;
   produtoNome: string;
   estoqueAtual: number;
+  ultimaVenda?: string;
+  diasSemVender?: number;
 }
 
 export interface RelatorioGiroEstoqueResponse {

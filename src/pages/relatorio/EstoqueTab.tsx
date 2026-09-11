@@ -20,44 +20,79 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
       <Card>
         <CardContent>
           <p className="mb-3 text-sm font-medium">Giro de Estoque</p>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead className="text-right">Vendido</TableHead>
-                <TableHead className="text-right">Estoque Atual</TableHead>
-                <TableHead className="text-right">Giro</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {giro?.produtos.map((p) => (
-                <TableRow key={p.produtoID}>
-                  <TableCell>{p.produtoNome}</TableCell>
-                  <TableCell className="text-right">{p.quantidadeVendida}</TableCell>
-                  <TableCell className="text-right">{p.estoqueAtual}</TableCell>
-                  <TableCell className="text-right">{p.giro.toFixed(2)}</TableCell>
+          <div className="max-h-96 overflow-y-auto">
+            <Table className="table-fixed">
+              <TableHeader className="sticky top-0 z-10 bg-card">
+                <TableRow>
+                  <TableHead className="w-[40%]">Produto</TableHead>
+                  <TableHead className="w-[20%] text-right">Vendido</TableHead>
+                  <TableHead className="w-[20%] text-right">Estoque Atual</TableHead>
+                  <TableHead className="w-[20%] text-right">Giro</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {!giro || giro.produtos.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
+                  </TableRow>
+                ) : (
+                  giro.produtos.map((p) => (
+                    <TableRow key={p.produtoID}>
+                      <TableCell className="truncate">{p.produtoNome}</TableCell>
+                      <TableCell className="text-right">{p.quantidadeVendida}</TableCell>
+                      <TableCell className="text-right">{p.estoqueAtual}</TableCell>
+                      <TableCell className="text-right">{p.giro.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent>
           <p className="mb-3 text-sm font-medium">Produtos Parados</p>
-          {giro?.produtosParados.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum produto parado no período.</p>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {giro?.produtosParados.map((p) => (
-                <div key={p.produtoID} className="flex justify-between text-sm">
-                  <span>{p.produtoNome}</span>
-                  <span className="text-muted-foreground">{p.estoqueAtual} em estoque</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="max-h-96 overflow-y-auto">
+            <Table className="table-fixed">
+              <TableHeader className="sticky top-0 z-10 bg-card">
+                <TableRow>
+                  <TableHead className="w-[40%]">Produto</TableHead>
+                  <TableHead className="w-[20%] text-right">Em Estoque</TableHead>
+                  <TableHead className="w-[20%] text-right">Última Venda</TableHead>
+                  <TableHead className="w-[20%] text-center">Parado há</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!giro || giro.produtosParados.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum produto parado no período.</TableCell>
+                  </TableRow>
+                ) : (
+                  giro.produtosParados.map((p) => (
+                    <TableRow key={p.produtoID}>
+                      <TableCell className="truncate">{p.produtoNome}</TableCell>
+                      <TableCell className="text-right">{p.estoqueAtual}</TableCell>
+                      <TableCell className="text-right">
+                        {p.ultimaVenda ? new Date(p.ultimaVenda).toLocaleDateString("pt-BR") : "—"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {p.diasSemVender == null ? (
+                          <StatusPill tone="danger" text="Nunca vendido" />
+                        ) : (
+                          <StatusPill
+                            tone={p.diasSemVender >= 90 ? "danger" : p.diasSemVender >= 60 ? "warning" : "ok"}
+                            text={`${p.diasSemVender}d`}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -67,26 +102,32 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
             <p className="text-sm font-medium">Produtos Vencendo</p>
             <Input type="number" className="w-24" value={diasLimite} onChange={(e) => setDiasLimite(Number(e.target.value) || 30)} />
           </div>
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead>Validade</TableHead>
-                <TableHead className="text-right">Em Estoque</TableHead>
-                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="w-[35%]">Produto</TableHead>
+                <TableHead className="w-[25%]">Validade</TableHead>
+                <TableHead className="w-[20%] text-right">Em Estoque</TableHead>
+                <TableHead className="w-[20%] text-center">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vencendo?.map((p) => (
-                <TableRow key={p.produtoID}>
-                  <TableCell>{p.produtoNome}</TableCell>
-                  <TableCell>{new Date(p.validade).toLocaleDateString("pt-BR")}</TableCell>
-                  <TableCell className="text-right">{p.quantidadeEmEstoque}</TableCell>
-                  <TableCell className="text-center">
-                    {p.vencido ? <StatusPill tone="danger" text="Vencido" /> : <StatusPill tone="warning" text={`${p.diasParaVencer}d`} />}
-                  </TableCell>
+              {!vencendo || vencendo.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                vencendo.map((p) => (
+                  <TableRow key={p.produtoID}>
+                    <TableCell className="truncate">{p.produtoNome}</TableCell>
+                    <TableCell className="truncate">{new Date(p.validade).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="text-right">{p.quantidadeEmEstoque}</TableCell>
+                    <TableCell className="text-center">
+                      {p.vencido ? <StatusPill tone="danger" text="Vencido" /> : <StatusPill tone="warning" text={`${p.diasParaVencer}d`} />}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
