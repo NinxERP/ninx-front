@@ -3,6 +3,9 @@ import { Bar } from "react-chartjs-2";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusPill } from "@/components/shared/StatusPill";
+import { Pagination } from "@/components/shared/Pagination";
+import { ExportButton } from "@/components/shared/ExportButton";
+import { usePagedList } from "@/hooks/usePagedList";
 import { useAgingRecebiveis, useLimiteCredito, useMargem } from "@/services/relatorio";
 import type { Periodo } from "@/services/relatorio";
 
@@ -10,6 +13,8 @@ export function FinanceiroTab({ periodo }: { periodo: Periodo }) {
   const { data: margem, isLoading: isLoadingMargem } = useMargem(periodo);
   const { data: aging, isLoading: isLoadingAging } = useAgingRecebiveis();
   const { data: limites, isLoading: isLoadingLimites } = useLimiteCredito();
+
+  const margemPag = usePagedList(margem?.produtos);
 
   if (isLoadingMargem || isLoadingAging || isLoadingLimites) {
     return <p className="text-sm text-muted-foreground">Carregando...</p>;
@@ -41,35 +46,43 @@ export function FinanceiroTab({ periodo }: { periodo: Periodo }) {
 
       <Card>
         <CardContent>
-          <p className="mb-3 text-sm font-medium">Margem por Produto</p>
-          <div className="max-h-96 overflow-y-auto">
-            <Table className="table-fixed">
-              <TableHeader className="sticky top-0 z-10 bg-card">
-                <TableRow>
-                  <TableHead className="w-[40%]">Produto</TableHead>
-                  <TableHead className="w-[20%] text-right">Receita</TableHead>
-                  <TableHead className="w-[20%] text-right">Lucro</TableHead>
-                  <TableHead className="w-[20%] text-right">Margem</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!margem || margem.produtos.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
-                  </TableRow>
-                ) : (
-                  margem.produtos.map((p) => (
-                    <TableRow key={p.produtoID}>
-                      <TableCell className="truncate">{p.produtoNome}</TableCell>
-                      <TableCell className="text-right">R$ {p.receitaTotal.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">R$ {p.lucroTotal.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{p.margemPercentual.toFixed(1)}%</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium">Margem por Produto</p>
+            <ExportButton filename="margem-produtos.xlsx" sheets={[{ name: "Margem", rows: margem?.produtos ?? [] }]} />
           </div>
+          <Table className="table-fixed">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Produto</TableHead>
+                <TableHead className="w-[20%] text-right">Receita</TableHead>
+                <TableHead className="w-[20%] text-right">Lucro</TableHead>
+                <TableHead className="w-[20%] text-right">Margem</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {margemPag.paginados.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
+                </TableRow>
+              ) : (
+                margemPag.paginados.map((p) => (
+                  <TableRow key={p.produtoID}>
+                    <TableCell className="truncate">{p.produtoNome}</TableCell>
+                    <TableCell className="text-right">R$ {p.receitaTotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">R$ {p.lucroTotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{p.margemPercentual.toFixed(1)}%</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <Pagination
+            paginaAtual={margemPag.pagina}
+            totalPaginas={margemPag.totalPaginas}
+            totalItens={margemPag.totalItens}
+            itemLabel="produtos"
+            onPageChange={margemPag.setPagina}
+          />
         </CardContent>
       </Card>
 

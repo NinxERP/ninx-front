@@ -3,6 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusPill } from "@/components/shared/StatusPill";
+import { Pagination } from "@/components/shared/Pagination";
+import { ExportButton } from "@/components/shared/ExportButton";
+import { usePagedList } from "@/hooks/usePagedList";
 import { useGiroEstoque, useProdutosVencendo } from "@/services/relatorio";
 import type { Periodo } from "@/services/relatorio";
 
@@ -10,6 +13,9 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
   const { data: giro, isLoading: isLoadingGiro } = useGiroEstoque(periodo);
   const [diasLimite, setDiasLimite] = useState(30);
   const { data: vencendo, isLoading: isLoadingVencendo } = useProdutosVencendo(diasLimite);
+
+  const giroPag = usePagedList(giro?.produtos);
+  const paradosPag = usePagedList(giro?.produtosParados);
 
   if (isLoadingGiro || isLoadingVencendo) {
     return <p className="text-sm text-muted-foreground">Carregando...</p>;
@@ -19,80 +25,96 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
     <div className="flex flex-col gap-4">
       <Card>
         <CardContent>
-          <p className="mb-3 text-sm font-medium">Giro de Estoque</p>
-          <div className="max-h-96 overflow-y-auto">
-            <Table className="table-fixed">
-              <TableHeader className="sticky top-0 z-10 bg-card">
-                <TableRow>
-                  <TableHead className="w-[40%]">Produto</TableHead>
-                  <TableHead className="w-[20%] text-right">Vendido</TableHead>
-                  <TableHead className="w-[20%] text-right">Estoque Atual</TableHead>
-                  <TableHead className="w-[20%] text-right">Giro</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!giro || giro.produtos.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
-                  </TableRow>
-                ) : (
-                  giro.produtos.map((p) => (
-                    <TableRow key={p.produtoID}>
-                      <TableCell className="truncate">{p.produtoNome}</TableCell>
-                      <TableCell className="text-right">{p.quantidadeVendida}</TableCell>
-                      <TableCell className="text-right">{p.estoqueAtual}</TableCell>
-                      <TableCell className="text-right">{p.giro.toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium">Giro de Estoque</p>
+            <ExportButton filename="giro-estoque.xlsx" sheets={[{ name: "Giro", rows: giro?.produtos ?? [] }]} />
           </div>
+          <Table className="table-fixed">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Produto</TableHead>
+                <TableHead className="w-[20%] text-right">Vendido</TableHead>
+                <TableHead className="w-[20%] text-right">Estoque Atual</TableHead>
+                <TableHead className="w-[20%] text-right">Giro</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {giroPag.paginados.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
+                </TableRow>
+              ) : (
+                giroPag.paginados.map((p) => (
+                  <TableRow key={p.produtoID}>
+                    <TableCell className="truncate">{p.produtoNome}</TableCell>
+                    <TableCell className="text-right">{p.quantidadeVendida}</TableCell>
+                    <TableCell className="text-right">{p.estoqueAtual}</TableCell>
+                    <TableCell className="text-right">{p.giro.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <Pagination
+            paginaAtual={giroPag.pagina}
+            totalPaginas={giroPag.totalPaginas}
+            totalItens={giroPag.totalItens}
+            itemLabel="produtos"
+            onPageChange={giroPag.setPagina}
+          />
         </CardContent>
       </Card>
 
       <Card>
         <CardContent>
-          <p className="mb-3 text-sm font-medium">Produtos Parados</p>
-          <div className="max-h-96 overflow-y-auto">
-            <Table className="table-fixed">
-              <TableHeader className="sticky top-0 z-10 bg-card">
-                <TableRow>
-                  <TableHead className="w-[40%]">Produto</TableHead>
-                  <TableHead className="w-[20%] text-right">Em Estoque</TableHead>
-                  <TableHead className="w-[20%] text-right">Última Venda</TableHead>
-                  <TableHead className="w-[20%] text-center">Parado há</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!giro || giro.produtosParados.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum produto parado no período.</TableCell>
-                  </TableRow>
-                ) : (
-                  giro.produtosParados.map((p) => (
-                    <TableRow key={p.produtoID}>
-                      <TableCell className="truncate">{p.produtoNome}</TableCell>
-                      <TableCell className="text-right">{p.estoqueAtual}</TableCell>
-                      <TableCell className="text-right">
-                        {p.ultimaVenda ? new Date(p.ultimaVenda).toLocaleDateString("pt-BR") : "—"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {p.diasSemVender == null ? (
-                          <StatusPill tone="danger" text="Nunca vendido" />
-                        ) : (
-                          <StatusPill
-                            tone={p.diasSemVender >= 90 ? "danger" : p.diasSemVender >= 60 ? "warning" : "ok"}
-                            text={`${p.diasSemVender}d`}
-                          />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium">Produtos Parados</p>
+            <ExportButton filename="produtos-parados.xlsx" sheets={[{ name: "Parados", rows: giro?.produtosParados ?? [] }]} />
           </div>
+          <Table className="table-fixed">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Produto</TableHead>
+                <TableHead className="w-[20%] text-right">Em Estoque</TableHead>
+                <TableHead className="w-[20%] text-right">Última Venda</TableHead>
+                <TableHead className="w-[20%] text-center">Parado há</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paradosPag.paginados.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">Nenhum produto parado no período.</TableCell>
+                </TableRow>
+              ) : (
+                paradosPag.paginados.map((p) => (
+                  <TableRow key={p.produtoID}>
+                    <TableCell className="truncate">{p.produtoNome}</TableCell>
+                    <TableCell className="text-right">{p.estoqueAtual}</TableCell>
+                    <TableCell className="text-right">
+                      {p.ultimaVenda ? new Date(p.ultimaVenda).toLocaleDateString("pt-BR") : "—"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {p.diasSemVender == null ? (
+                        <StatusPill tone="danger" text="Nunca vendido" />
+                      ) : (
+                        <StatusPill
+                          tone={p.diasSemVender >= 90 ? "danger" : p.diasSemVender >= 60 ? "warning" : "ok"}
+                          text={`${p.diasSemVender}d`}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <Pagination
+            paginaAtual={paradosPag.pagina}
+            totalPaginas={paradosPag.totalPaginas}
+            totalItens={paradosPag.totalItens}
+            itemLabel="produtos"
+            onPageChange={paradosPag.setPagina}
+          />
         </CardContent>
       </Card>
 

@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { ExportButton } from "@/components/shared/ExportButton";
 import { PeriodoSelector, ultimosDias } from "@/pages/relatorio/PeriodoSelector";
 import { VisaoGeralTab } from "@/pages/relatorio/VisaoGeralTab";
 import { VendasTab } from "@/pages/relatorio/VendasTab";
@@ -11,6 +12,17 @@ import { FinanceiroTab } from "@/pages/relatorio/FinanceiroTab";
 import { EstoqueTab } from "@/pages/relatorio/EstoqueTab";
 import { ClientesTab } from "@/pages/relatorio/ClientesTab";
 import { ComparativoTab } from "@/pages/relatorio/ComparativoTab";
+import {
+  useAgingRecebiveis,
+  useClientesInativos,
+  useComparativoComercios,
+  useCurvaAbc,
+  useDesempenhoVendedores,
+  useGiroEstoque,
+  useLimiteCredito,
+  useMargem,
+  useProdutosVencendo,
+} from "@/services/relatorio";
 import type { Periodo } from "@/services/relatorio";
 
 const ABAS_BASE = ["Visão Geral", "Vendas", "Financeiro", "Estoque", "Clientes"] as const;
@@ -24,6 +36,29 @@ export function Relatorio() {
 
   const [aba, setAba] = useState<Aba>("Visão Geral");
   const [periodo, setPeriodo] = useState<Periodo>(ultimosDias(30));
+
+  const { data: curvaAbc } = useCurvaAbc(periodo);
+  const { data: vendedores } = useDesempenhoVendedores(periodo);
+  const { data: margem } = useMargem(periodo);
+  const { data: aging } = useAgingRecebiveis();
+  const { data: limites } = useLimiteCredito();
+  const { data: giro } = useGiroEstoque(periodo);
+  const { data: vencendo } = useProdutosVencendo(30);
+  const { data: inativos } = useClientesInativos(30);
+  const { data: comparativo } = useComparativoComercios(periodo, mostrarComparativo);
+
+  const todosOsRelatorios = [
+    { name: "Curva ABC", rows: curvaAbc ?? [] },
+    { name: "Desempenho Vendedores", rows: vendedores ?? [] },
+    { name: "Margem por Produto", rows: margem?.produtos ?? [] },
+    { name: "Aging Recebiveis", rows: aging?.vendas ?? [] },
+    { name: "Limite de Credito", rows: limites ?? [] },
+    { name: "Giro de Estoque", rows: giro?.produtos ?? [] },
+    { name: "Produtos Parados", rows: giro?.produtosParados ?? [] },
+    { name: "Produtos Vencendo", rows: vencendo ?? [] },
+    { name: "Clientes Inativos", rows: inativos ?? [] },
+    { name: "Comparativo Comercios", rows: comparativo?.comercios ?? [] },
+  ];
 
   return (
     <div className="flex h-full flex-col p-6">
@@ -48,7 +83,10 @@ export function Relatorio() {
             </button>
           ))}
         </div>
-        {aba !== "Clientes" && <PeriodoSelector periodo={periodo} onChange={setPeriodo} />}
+        <div className="flex items-center gap-3">
+          {aba !== "Clientes" && <PeriodoSelector periodo={periodo} onChange={setPeriodo} />}
+          <ExportButton filename="relatorios.xlsx" sheets={todosOsRelatorios} label="Exportar tudo" />
+        </div>
       </div>
 
       <div className="scroll-styled min-h-0 flex-1 overflow-y-auto p-1 pb-4">
