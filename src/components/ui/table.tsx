@@ -26,18 +26,8 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   )
 }
 
-function TableBody({
-  className,
-  keepLastBorder,
-  ...props
-}: React.ComponentProps<"tbody"> & { keepLastBorder?: boolean }) {
-  return (
-    <tbody
-      data-slot="table-body"
-      className={cn(!keepLastBorder && "[&_tr:last-child]:border-0", className)}
-      {...props}
-    />
-  )
+function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
+  return <tbody data-slot="table-body" className={cn(className)} {...props} />
 }
 
 function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {

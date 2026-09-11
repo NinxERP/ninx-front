@@ -23,7 +23,7 @@ export function MainPage() {
       <h1 className="mb-1 text-2xl font-semibold">Olá, {user?.nome}</h1>
       <p className="mb-6 text-sm text-muted-foreground">{user?.nomeComercio}</p>
 
-      <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="@container grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards
           .filter((c) => !c.ownerOnly || isOwnerOrHigher)
           .map((c) => (
@@ -35,7 +35,7 @@ export function MainPage() {
               <CardHeader className="flex h-full flex-col items-center justify-center gap-1 text-center">
                 <c.icon className="mb-3 size-16 text-primary" />
                 <CardTitle className="text-2xl">{c.title}</CardTitle>
-                <CardDescription className="text-lg">{c.description}</CardDescription>
+                <CardDescription className="hidden text-lg @[420px]:block">{c.description}</CardDescription>
               </CardHeader>
             </Card>
           ))}

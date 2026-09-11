@@ -4,7 +4,6 @@ import { ArrowLeft, Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
@@ -87,25 +86,14 @@ export function CategoriaProdutoGestao() {
       </Button>
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Categorias de Produto</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Categorias de Produto</h1>
+          {data && <p className="text-sm text-muted-foreground">{data.totalRecords} categorias cadastradas</p>}
+        </div>
         <Button onClick={abrirNova}>
           <Plus /> Nova Categoria
         </Button>
       </div>
-
-      {data && (
-        <Card size="sm" className="mb-4 w-fit bg-primary/5 ring-primary/15">
-          <CardContent className="flex items-center gap-3 py-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Tag className="size-4" />
-            </span>
-            <div>
-              <p className="text-xl font-semibold leading-none">{data.totalRecords}</p>
-              <p className="text-sm text-muted-foreground">Categorias cadastradas</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <Input
         placeholder="Buscar por nome..."
@@ -131,7 +119,7 @@ export function CategoriaProdutoGestao() {
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody keepLastBorder={pagina < (data.totalPages ?? 1)}>
+              <TableBody>
                 {data.data.map((categoria) => (
                   <TableRow key={categoria.categoriaID}>
                     <TableCell>

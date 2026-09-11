@@ -16,18 +16,21 @@ import {
   QrCode,
   CreditCard,
   CheckCircle2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { LoadingOverlay } from "@/components/shared/LoadingOverlay";
 import { buscarProdutoPorCodigoBarras } from "@/services/produto";
 import { buscarClientesPorNome } from "@/services/cliente";
 import { useCriarVenda, useEstornarVenda } from "@/services/venda";
 import { useVerificarAssinatura } from "@/services/assinaturaEletronica";
 import { useCurrencyInput } from "@/hooks/useCurrencyInput";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useNavigationGuard } from "@/context/NavigationGuardContext";
 import { useAuth } from "@/context/AuthContext";
 import { formatarNumero } from "@/lib/currency";
 import { FormaPagamento, TipoVenda } from "@/types";
@@ -62,18 +65,22 @@ export function Venda() {
 
   const [tipoVenda, setTipoVenda] = useState<0 | typeof TipoVenda.Normal | typeof TipoVenda.Fiado>(0);
   const [buscaCliente, setBuscaCliente] = useState("");
-  const buscaClienteDebounced = useDebouncedValue(buscaCliente);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
   const [resultadosCliente, setResultadosCliente] = useState<ClienteResponse[]>([]);
   const [clienteSelecionado, setClienteSelecionado] = useState<ClienteResponse | null>(null);
   const clienteRef = useRef<HTMLInputElement>(null);
 
   const [metodoPagamento, setMetodoPagamento] = useState<0 | FormaPagamento>(0);
   const valorRecebido = useCurrencyInput(0);
+  const metodoPagamentoAnterior = useRef<0 | FormaPagamento>(0);
+  const valorRecebidoEmDinheiro = useRef(0);
 
   const [vendaCriada, setVendaCriada] = useState<VendaResponse | null>(null);
   const [assinado, setAssinado] = useState(false);
   const [confirmSairAberto, setConfirmSairAberto] = useState(false);
   const [confirmDesistirAberto, setConfirmDesistirAberto] = useState(false);
+  const [destinoPendente, setDestinoPendente] = useState("/mainpage");
+  const { setGuard } = useNavigationGuard();
 
   useEffect(() => {
     if (etapa === 1) barcodeRef.current?.focus();
@@ -93,22 +100,47 @@ export function Venda() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [etapa]);
 
-  useEffect(() => {
-    if (buscaClienteDebounced.trim().length < 3) {
-      setResultadosCliente([]);
-      return;
-    }
-    buscarClientesPorNome(buscaClienteDebounced).then(setResultadosCliente);
-  }, [buscaClienteDebounced]);
+  const executarBuscaCliente = async () => {
+    setResultadosCliente([]);
+    if (buscaCliente.trim().length < 3) return;
+    setBuscandoCliente(true);
+    const resultados = await buscarClientesPorNome(buscaCliente).finally(() => setBuscandoCliente(false));
+    setResultadosCliente(resultados);
+  };
 
   useEffect(() => {
     if (tipoVenda === TipoVenda.Fiado) clienteRef.current?.focus();
+    if (tipoVenda === TipoVenda.Fiado || tipoVenda === TipoVenda.Normal) setMetodoPagamento(FormaPagamento.Dinheiro);
   }, [tipoVenda]);
+
+  useEffect(() => {
+    if (tipoVenda === TipoVenda.Normal) {
+      if (metodoPagamentoAnterior.current === FormaPagamento.Dinheiro && metodoPagamento !== FormaPagamento.Dinheiro) {
+        valorRecebidoEmDinheiro.current = valorRecebido.value;
+      }
+      if (metodoPagamento === FormaPagamento.Dinheiro) valorRecebido.reset(valorRecebidoEmDinheiro.current);
+      else if (metodoPagamento !== 0) valorRecebido.reset(0);
+    }
+    metodoPagamentoAnterior.current = metodoPagamento;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoVenda, metodoPagamento]);
 
   useEffect(() => {
     if (codigoBarrasDebounced.trim()) adicionarPorCodigoBarras();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codigoBarrasDebounced]);
+
+  useEffect(() => {
+    if (carrinho.length === 0 || etapa === 4) {
+      setGuard(null);
+      return;
+    }
+    setGuard((to) => {
+      setDestinoPendente(to);
+      setConfirmSairAberto(true);
+    });
+    return () => setGuard(null);
+  }, [carrinho.length, etapa, setGuard]);
 
   const totalVenda = carrinho.reduce((acc, i) => acc + i.precoUnitario * i.quantidade, 0);
   const troco = metodoPagamento === FormaPagamento.Dinheiro ? Math.max(0, valorRecebido.value - totalVenda) : 0;
@@ -153,18 +185,20 @@ export function Venda() {
 
   const alterarQuantidade = (produtoID: number, delta: number) => {
     setCarrinho((atual) =>
-      atual
-        .map((i) => {
-          if (i.produtoID !== produtoID) return i;
-          const nova = i.quantidade + delta;
-          if (nova > i.estoqueDisponivel) {
-            toast.error("Estoque insuficiente.");
-            return i;
-          }
-          return { ...i, quantidade: nova };
-        })
-        .filter((i) => i.quantidade > 0),
+      atual.map((i) => {
+        if (i.produtoID !== produtoID) return i;
+        const nova = Math.max(1, i.quantidade + delta);
+        if (nova > i.estoqueDisponivel) {
+          toast.error("Estoque insuficiente.");
+          return i;
+        }
+        return { ...i, quantidade: nova };
+      }),
     );
+  };
+
+  const removerItem = (produtoID: number) => {
+    setCarrinho((atual) => atual.filter((i) => i.produtoID !== produtoID));
   };
 
   const definirQuantidade = (produtoID: number, quantidade: number) => {
@@ -203,7 +237,7 @@ export function Venda() {
       return;
     }
     const valorPagamento = tipoVenda === TipoVenda.Normal ? totalVenda : valorRecebido.value;
-    if (valorPagamento <= 0) {
+    if (tipoVenda === TipoVenda.Normal && valorPagamento <= 0) {
       toast.error("Valor de pagamento inválido.");
       return;
     }
@@ -252,6 +286,7 @@ export function Venda() {
 
   const sairDaVenda = () => {
     if (carrinho.length > 0) {
+      setDestinoPendente("/mainpage");
       setConfirmSairAberto(true);
       return;
     }
@@ -266,28 +301,27 @@ export function Venda() {
     setBuscaCliente("");
     setMetodoPagamento(0);
     valorRecebido.reset(0);
+    valorRecebidoEmDinheiro.current = 0;
+    metodoPagamentoAnterior.current = 0;
     setVendaCriada(null);
     setAssinado(false);
   };
 
   const mensagemLoading = buscandoProduto
     ? "Buscando produto..."
-    : criarVenda.isPending
-      ? "Finalizando venda..."
-      : verificar.isPending
-        ? "Verificando assinatura..."
-        : estornarVenda.isPending
-          ? "Desistindo da venda..."
-          : null;
+    : buscandoCliente
+      ? "Buscando clientes..."
+      : criarVenda.isPending
+        ? "Finalizando venda..."
+        : verificar.isPending
+          ? "Verificando assinatura..."
+          : estornarVenda.isPending
+            ? "Desistindo da venda..."
+            : null;
 
   return (
     <div className="relative flex h-full min-w-0 flex-col overflow-x-hidden p-6">
-      {mensagemLoading && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
-          <span className="size-8 animate-spin rounded-full border-4 border-muted-foreground border-t-transparent" />
-          <p className="text-sm font-medium">{mensagemLoading}</p>
-        </div>
-      )}
+      {mensagemLoading && <LoadingOverlay message={mensagemLoading} />}
       <div className="mb-4 flex items-start justify-between">
         <div>
           {etapa === 1 && (
@@ -306,8 +340,8 @@ export function Venda() {
       </div>
 
       {etapa === 1 && (
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <div className="relative max-w-md">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="relative mb-4 max-w-md">
             <ScanBarcode className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
             <Input
               ref={barcodeRef}
@@ -334,7 +368,7 @@ export function Venda() {
                 {carrinho.map((item) => (
                   <div
                     key={item.produtoID}
-                    className="flex min-w-0 items-center justify-between gap-3 border-b p-3 text-sm last:border-0"
+                    className="flex min-w-0 items-center justify-between gap-3 border-b p-3 text-sm"
                   >
                     <div className="min-w-0">
                       <p className="truncate font-medium">{item.nome}</p>
@@ -371,7 +405,7 @@ export function Venda() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => alterarQuantidade(item.produtoID, -item.quantidade)}
+                        onClick={() => removerItem(item.produtoID)}
                       >
                         <Trash2 />
                       </Button>
@@ -382,7 +416,7 @@ export function Venda() {
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t pt-4">
+          <div className="mt-4 flex items-center justify-between">
             <span className="text-lg font-semibold">Total: R$ {formatarNumero(totalVenda)}</span>
             <Button disabled={carrinho.length === 0} onClick={() => setEtapa(2)}>Continuar para pagamento</Button>
           </div>
@@ -415,40 +449,72 @@ export function Venda() {
             </button>
           </div>
 
-          {tipoVenda === TipoVenda.Fiado && (
-            <div className="flex flex-col gap-2">
-              <Input
-                ref={clienteRef}
-                placeholder="Buscar cliente por nome..."
-                value={buscaCliente}
-                onChange={(e) => setBuscaCliente(e.target.value)}
-              />
-              {resultadosCliente.length > 0 && (
-                <div className="rounded-md border">
-                  <div className="scroll-styled max-h-40 overflow-y-auto">
+          <div className={`flex flex-col gap-2 ${tipoVenda === TipoVenda.Fiado ? "" : "invisible pointer-events-none"}`}>
+              <div className="relative">
+                {clienteSelecionado ? (
+                  <div className="flex h-10 items-center gap-2 rounded-lg border border-emerald-500 bg-emerald-500/10 pr-2 pl-3">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-medium text-emerald-600">
+                      {clienteSelecionado.nome.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{clienteSelecionado.nome}</span>
+                    <button
+                      type="button"
+                      className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-emerald-500/20 hover:text-foreground"
+                      onClick={() => {
+                        setClienteSelecionado(null);
+                        setBuscaCliente("");
+                        clienteRef.current?.focus();
+                      }}
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <Input
+                    ref={clienteRef}
+                    tabIndex={tipoVenda === TipoVenda.Fiado ? undefined : -1}
+                    placeholder="Buscar cliente por nome..."
+                    value={buscaCliente}
+                    onChange={(e) => setBuscaCliente(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && executarBuscaCliente()}
+                    onBlur={() => setResultadosCliente([])}
+                  />
+                )}
+                {resultadosCliente.length > 0 && (
+                <div className="scroll-styled absolute top-full z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border bg-card shadow-md">
+                  <div className="divide-y">
                     {resultadosCliente.map((c) => (
                       <button
                         key={c.clienteID}
-                        className="block w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           setClienteSelecionado(c);
                           setBuscaCliente(c.nome);
                           setResultadosCliente([]);
                         }}
                       >
-                        {c.nome}
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                          {c.nome.charAt(0).toUpperCase()}
+                        </span>
+                        <span className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate text-sm font-medium">{c.nome}</span>
+                          <span className="truncate text-xs text-muted-foreground">
+                            {c.enderecoBairro} - {c.enderecoLogradouro}
+                          </span>
+                        </span>
+                        {c.saldoDevedor > 0 && (
+                          <Badge variant="outline" className="shrink-0 text-amber-600">
+                            Deve R$ {formatarNumero(c.saldoDevedor)}
+                          </Badge>
+                        )}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
-              {clienteSelecionado && (
-                <p className="flex items-center gap-1.5 text-sm text-emerald-600">
-                  <Check className="size-4" /> Cliente selecionado: <span className="font-medium">{clienteSelecionado.nome}</span>
-                </p>
-              )}
+                )}
+              </div>
             </div>
-          )}
 
           <div className="flex justify-between pt-2">
             <Button variant="outline" onClick={() => setEtapa(1)}>Voltar</Button>
@@ -485,14 +551,18 @@ export function Venda() {
               <span className="text-lg font-semibold">R$ {formatarNumero(totalVenda)}</span>
             </div>
 
-            {(metodoPagamento === FormaPagamento.Dinheiro || tipoVenda === TipoVenda.Fiado) && metodoPagamento !== 0 && (
+            {metodoPagamento !== 0 && (
               <div className="mt-3 flex flex-col gap-1.5 border-t pt-3">
                 <label className="text-sm text-muted-foreground">Valor Recebido</label>
-                <Input value={valorRecebido.formatted} onChange={(e) => valorRecebido.onInputChange(e.target.value)} />
+                <Input
+                  disabled={tipoVenda === TipoVenda.Normal && metodoPagamento !== FormaPagamento.Dinheiro}
+                  value={valorRecebido.formatted}
+                  onChange={(e) => valorRecebido.onInputChange(e.target.value)}
+                />
               </div>
             )}
 
-            {metodoPagamento === FormaPagamento.Dinheiro && tipoVenda === TipoVenda.Normal && (
+            {tipoVenda === TipoVenda.Normal && metodoPagamento !== 0 && (
               <div className="mt-3 flex justify-between border-t pt-3 text-sm">
                 <span className="text-muted-foreground">Troco</span>
                 <span className={`font-semibold ${troco > 0 ? "text-emerald-600" : ""}`}>R$ {formatarNumero(troco)}</span>
@@ -512,7 +582,15 @@ export function Venda() {
           </div>
 
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setEtapa(2)}>Voltar</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                valorRecebido.reset(0);
+                setEtapa(2);
+              }}
+            >
+              Voltar
+            </Button>
             <Button disabled={!podeProsseguirPagamento() || criarVenda.isPending} onClick={confirmarPagamento}>
               <Check /> {criarVenda.isPending ? "Finalizando..." : "Finalizar Venda"}
             </Button>
@@ -567,7 +645,7 @@ export function Venda() {
         confirmLabel="Sair"
         onConfirm={() => {
           setConfirmSairAberto(false);
-          navigate("/mainpage");
+          navigate(destinoPendente);
         }}
         onClose={() => setConfirmSairAberto(false)}
       />

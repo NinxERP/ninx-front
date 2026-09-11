@@ -4,7 +4,6 @@ import { ArrowLeft, Plus, Pencil, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -93,25 +92,14 @@ export function CargoGestao() {
       </Button>
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Cargos</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Cargos</h1>
+          {cargos && <p className="text-sm text-muted-foreground">{cargos.length} cargos cadastrados</p>}
+        </div>
         <Button onClick={abrirNovo}>
           <Plus /> Novo Cargo
         </Button>
       </div>
-
-      {cargos && (
-        <Card size="sm" className="mb-4 w-fit bg-primary/5 ring-primary/15">
-          <CardContent className="flex items-center gap-3 py-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Shield className="size-4" />
-            </span>
-            <div>
-              <p className="text-xl font-semibold leading-none">{cargos.length}</p>
-              <p className="text-sm text-muted-foreground">Cargos cadastrados</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="flex min-h-0 flex-1 flex-col rounded-lg border">
         {isLoading ? (

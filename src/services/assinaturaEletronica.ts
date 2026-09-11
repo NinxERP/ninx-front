@@ -8,7 +8,7 @@ function baixarBase64ComoPdf(base64: string, nomeArquivo: string) {
   const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = nomeArquivo;
+  link.download = nomeArquivo.replace(/[\\/:*?"<>|]/g, "").trim();
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -41,12 +41,12 @@ export function useVerificarAssinatura() {
 
 export function useBaixarDocumentoPdf() {
   return useMutation({
-    mutationFn: async ({ guid, assinado }: { guid: string; assinado: boolean }) => {
+    mutationFn: async ({ guid, assinado, nomeArquivo }: { guid: string; assinado: boolean; nomeArquivo: string }) => {
       const path = assinado ? `/api/AssinaturaEletronica/comercio/${guid}` : `/api/AssinaturaEletronica/${guid}`;
       const doc = await api.get<AssinaturaEletronicaResponse>(path);
       const base64 = assinado ? doc.documentoAssinadoBase64 : doc.documentoBase64;
       if (!base64) throw new Error("Documento indisponível para download.");
-      baixarBase64ComoPdf(base64, `Venda_Fiado_${guid.slice(0, 8)}.pdf`);
+      baixarBase64ComoPdf(base64, `${nomeArquivo}.pdf`);
     },
     onSuccess: () => toast.success("PDF baixado com sucesso."),
     onError: (err) => toast.error(err instanceof ApiError ? err.message : "Erro ao baixar o PDF."),

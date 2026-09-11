@@ -307,7 +307,13 @@ export function ClienteFiadoModal({ cliente, onClose }: { cliente: ClienteRespon
                                               size="sm"
                                               variant="outline"
                                               disabled={baixar.isPending}
-                                              onClick={() => baixar.mutate({ guid: doc.documentoGuid, assinado: doc.assinado })}
+                                              onClick={() =>
+                                                baixar.mutate({
+                                                  guid: doc.documentoGuid,
+                                                  assinado: doc.assinado,
+                                                  nomeArquivo: `${idx === 0 ? "VendaOriginal" : `Recibo${idx}`}_${cliente.nome}`,
+                                                })
+                                              }
                                             >
                                               <Download /> PDF
                                             </Button>

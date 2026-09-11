@@ -51,7 +51,7 @@ export function Relatorio() {
         {aba !== "Clientes" && <PeriodoSelector periodo={periodo} onChange={setPeriodo} />}
       </div>
 
-      <div className="scroll-styled min-h-0 flex-1 overflow-y-auto px-1">
+      <div className="scroll-styled min-h-0 flex-1 overflow-y-auto p-1 pb-4">
         {aba === "Visão Geral" && <VisaoGeralTab periodo={periodo} />}
         {aba === "Vendas" && <VendasTab periodo={periodo} />}
         {aba === "Financeiro" && <FinanceiroTab periodo={periodo} />}

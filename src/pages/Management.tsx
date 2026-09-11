@@ -20,13 +20,13 @@ export function Management() {
       </Button>
       <h1 className="mb-6 text-2xl font-semibold">Gestão</h1>
 
-      <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="@container grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2">
         {cards.map((c) => (
           <Card key={c.to} onClick={() => navigate(c.to)} className="h-full cursor-pointer transition-colors hover:bg-accent">
             <CardHeader className="flex h-full flex-col items-center justify-center gap-1 text-center">
               <c.icon className="mb-3 size-16 text-primary" />
               <CardTitle className="text-2xl">{c.title}</CardTitle>
-              <CardDescription className="text-lg">{c.description}</CardDescription>
+              <CardDescription className="hidden text-lg @[420px]:block">{c.description}</CardDescription>
             </CardHeader>
           </Card>
         ))}

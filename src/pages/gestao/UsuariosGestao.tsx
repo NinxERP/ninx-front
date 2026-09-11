@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -205,6 +204,7 @@ export function UsuariosGestao() {
           <h1 className="text-2xl font-semibold">Usuários</h1>
           <p className="text-sm text-muted-foreground">
             {verTodos ? "Todos os usuários cadastrados na plataforma" : "Gerencie usuários, acessos e cargos da equipe"}
+            {data && ` · ${data.totalRecords} ${verTodos ? "usuários" : "membros"}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -235,20 +235,6 @@ export function UsuariosGestao() {
           </Button>
         </div>
       </div>
-
-      {data && (
-        <Card size="sm" className="mb-4 w-fit bg-primary/5 ring-primary/15">
-          <CardContent className="flex items-center gap-3 py-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <UserCog className="size-4" />
-            </span>
-            <div>
-              <p className="text-xl font-semibold leading-none">{data.totalRecords}</p>
-              <p className="text-sm text-muted-foreground">Membros da equipe</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <Input
         placeholder="Buscar por nome ou e-mail..."
@@ -282,7 +268,7 @@ export function UsuariosGestao() {
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody keepLastBorder={pagina < (data.totalPages ?? 1)}>
+              <TableBody>
                 {data.data.map((u) => (
                   <TableRow key={u.usuarioID}>
                     <TableCell>

@@ -4,8 +4,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Store } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useUpdater } from "@/context/UpdaterContext";
 import { LoadingOverlay } from "@/components/shared/LoadingOverlay";
 import type { ComercioSimplificado } from "@/types";
 
@@ -18,6 +19,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export function Login() {
   const { login, isAuthenticated } = useAuth();
+  const { checkForUpdate } = useUpdater();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [comercios, setComercios] = useState<ComercioSimplificado[] | null>(null);
@@ -46,6 +48,7 @@ export function Login() {
     setErrorMessage(null);
     setIsSubmitting(true);
     try {
+      await checkForUpdate();
       const resultado = await login(email, senha, comercioID);
       if (resultado) {
         setComercios(resultado);
@@ -63,7 +66,7 @@ export function Login() {
 
   return (
     <div className="flex h-full items-center justify-center bg-muted">
-      {isSubmitting && <LoadingOverlay message="Entrando..." />}
+      {isSubmitting && <LoadingOverlay message="Entrando..." className="fixed inset-0" />}
       <div className="w-full max-w-sm rounded-lg border bg-card p-8 shadow-sm">
         <div className="mb-6 flex flex-col items-center gap-3">
           <img src="/images/nina_logo_clean.png" alt="Ninx" className="size-16 rounded-full bg-white p-0.5 object-contain" />
@@ -83,9 +86,10 @@ export function Login() {
               <button
                 key={comercio.comercioID}
                 type="button"
-                className="rounded-md border px-3 py-2 text-left text-sm hover:bg-accent"
+                className="flex items-center gap-3 rounded-lg border px-4 py-3 text-left text-base font-medium hover:bg-accent"
                 onClick={() => autenticar(getValues("email"), getValues("senha"), comercio.comercioID)}
               >
+                <Store className="size-5 shrink-0 text-muted-foreground" />
                 {comercio.nome}
               </button>
             ))}

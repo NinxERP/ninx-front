@@ -269,7 +269,7 @@ export function Cliente() {
                   <TableHead className="w-40 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody keepLastBorder={pagina < (data.totalPages ?? 1)}>
+              <TableBody>
                 {data.data.map((cliente) => (
                   <TableRow key={cliente.clienteID}>
                     <TableCell className="truncate text-left">{cliente.nome}</TableCell>

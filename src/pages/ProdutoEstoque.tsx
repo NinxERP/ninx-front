@@ -316,7 +316,7 @@ export function ProdutoEstoque() {
                   <TableHead className="w-28 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody keepLastBorder={pagina < (data.totalPages ?? 1)}>
+              <TableBody>
                 {data.data.map((produto) => {
                   const status = statusProduto(produto);
                   return (

@@ -3,6 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
+import { UpdaterProvider } from "@/context/UpdaterContext";
+import { NavigationGuardProvider } from "@/context/NavigationGuardContext";
 import { RequireAuth } from "@/routes/RequireAuth";
 import { RequireOwner } from "@/routes/RequireOwner";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -30,11 +33,13 @@ function PageFallback() {
   return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Carregando...</div>;
 }
 
-function App() {
+function AppShell() {
+  const { theme } = useTheme();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <HashRouter>
+    <>
+      <HashRouter>
+        <NavigationGuardProvider>
           <div className="h-screen w-screen overflow-hidden">
             <Suspense fallback={<PageFallback />}>
               <Routes>
@@ -64,9 +69,37 @@ function App() {
             </Suspense>
           </div>
           <AppUpdateGate />
-        </HashRouter>
-        <Toaster richColors position="top-right" />
-      </AuthProvider>
+        </NavigationGuardProvider>
+      </HashRouter>
+      <Toaster
+        richColors
+        expand
+        visibleToasts={3}
+        theme={theme}
+        position="top-right"
+        duration={4000}
+        toastOptions={{
+          classNames: {
+            toast: "rounded-xl border shadow-lg font-sans",
+            title: "text-sm font-medium",
+            description: "text-sm opacity-90",
+          },
+        }}
+      />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <UpdaterProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <AppShell />
+          </ThemeProvider>
+        </AuthProvider>
+      </UpdaterProvider>
     </QueryClientProvider>
   );
 }

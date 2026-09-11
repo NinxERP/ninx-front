@@ -114,7 +114,7 @@ export function MinhaAssinatura() {
                           <TableHead>Vencimento</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody keepLastBorder={pagina < (historico?.totalPages ?? 1)}>
+                      <TableBody>
                         {historico?.data.map((p) => (
                           <TableRow key={p.pagamentoAssinaturaID}>
                             <TableCell>R$ {p.valor.toFixed(2)}</TableCell>

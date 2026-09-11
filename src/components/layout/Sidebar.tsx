@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   Home,
@@ -13,18 +14,30 @@ import {
   Moon,
   Sun,
   LogOut,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useTheme } from "@/hooks/useTheme";
+import { useTheme } from "@/context/ThemeContext";
+import { useNavigationGuard } from "@/context/NavigationGuardContext";
+import { TrocarComercioDialog } from "@/components/layout/TrocarComercioDialog";
 
 const navItemClass =
   "flex items-center gap-3 rounded-md px-3 py-2.5 text-base text-muted-foreground hover:bg-accent hover:text-foreground [&.active]:bg-accent [&.active]:text-foreground [&.active]:font-semibold";
 
 function Item({ to, icon: Icon, label }: { to: string; icon: typeof Home; label: string }) {
+  const { requestNavigation } = useNavigationGuard();
+
   return (
-    <NavLink to={to} end className={({ isActive }) => cn(navItemClass, isActive && "active")}>
+    <NavLink
+      to={to}
+      end
+      className={({ isActive }) => cn(navItemClass, isActive && "active")}
+      onClick={(e) => {
+        if (requestNavigation(to)) e.preventDefault();
+      }}
+    >
       <Icon className="size-5 shrink-0" />
       {label}
     </NavLink>
@@ -32,19 +45,31 @@ function Item({ to, icon: Icon, label }: { to: string; icon: typeof Home; label:
 }
 
 export function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user, logout, availableComercios } = useAuth();
   const { isOwnerOrHigher } = usePermissions();
   const { theme, toggleTheme } = useTheme();
+  const [trocarComercioAberto, setTrocarComercioAberto] = useState(false);
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-card">
       <div className="flex items-center gap-3 border-b px-4 py-4">
         <img src="/images/nina_logo_clean.png" alt="Ninx" className="size-11 shrink-0 rounded-full bg-white p-0.5 object-contain" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-base font-semibold">Ninx</p>
           <p className="truncate text-sm text-muted-foreground">{user?.nomeComercio}</p>
         </div>
+        {availableComercios.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setTrocarComercioAberto(true)}
+            className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            title="Trocar comércio"
+          >
+            <ArrowLeftRight className="size-4" />
+          </button>
+        )}
       </div>
+      <TrocarComercioDialog open={trocarComercioAberto} onOpenChange={setTrocarComercioAberto} />
 
       <nav className="scroll-styled flex-1 space-y-1 overflow-y-auto p-3">
         <Item to="/mainpage" icon={Home} label="Início" />
