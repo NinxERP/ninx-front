@@ -1,0 +1,135 @@
+import "@/lib/chartSetup";
+import { Bar } from "react-chartjs-2";
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusPill } from "@/components/shared/StatusPill";
+import { Pagination } from "@/components/shared/Pagination";
+import { ExportButton } from "@/components/shared/ExportButton";
+import { usePagedList } from "@/hooks/usePagedList";
+import { useAgingRecebiveis, useLimiteCredito, useMargem } from "@/services/relatorio";
+import type { Periodo } from "@/services/relatorio";
+
+export function FinanceiroTab({ periodo }: { periodo: Periodo }) {
+  const { data: margem, isLoading: isLoadingMargem } = useMargem(periodo);
+  const { data: aging, isLoading: isLoadingAging } = useAgingRecebiveis();
+  const { data: limites, isLoading: isLoadingLimites } = useLimiteCredito();
+
+  const margemPag = usePagedList(margem?.produtos);
+  const limitesPag = usePagedList(limites);
+
+  if (isLoadingMargem || isLoadingAging || isLoadingLimites) {
+    return <p className="text-sm text-muted-foreground">Carregando...</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardContent>
+          <p className="mb-3 text-sm font-medium">Aging de Recebíveis</p>
+          {!aging || (aging.ate30Dias.valor === 0 && aging.de31a60Dias.valor === 0 && aging.acima60Dias.valor === 0) ? (
+            <p className="text-sm text-muted-foreground">Sem dados no período.</p>
+          ) : (
+            <Bar
+              data={{
+                labels: ["0-30 dias", "31-60 dias", "60+ dias"],
+                datasets: [
+                  {
+                    label: "Saldo devedor",
+                    data: [aging.ate30Dias.valor, aging.de31a60Dias.valor, aging.acima60Dias.valor],
+                    backgroundColor: "#6366f1",
+                  },
+                ],
+              }}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium">Margem por Produto</p>
+            <ExportButton filename="margem-produtos" sheets={[{ name: "Margem", rows: margem?.produtos ?? [] }]} />
+          </div>
+          <Table className="table-fixed">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Produto</TableHead>
+                <TableHead className="w-[20%] text-right">Receita</TableHead>
+                <TableHead className="w-[20%] text-right">Lucro</TableHead>
+                <TableHead className="w-[20%] text-right">Margem</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {margemPag.paginados.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
+                </TableRow>
+              ) : (
+                margemPag.paginados.map((p) => (
+                  <TableRow key={p.produtoID}>
+                    <TableCell className="truncate">{p.produtoNome}</TableCell>
+                    <TableCell className="text-right">R$ {p.receitaTotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">R$ {p.lucroTotal.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{p.margemPercentual.toFixed(1)}%</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <Pagination
+            paginaAtual={margemPag.pagina}
+            totalPaginas={margemPag.totalPaginas}
+            totalItens={margemPag.totalItens}
+            itemLabel="produtos"
+            onPageChange={margemPag.setPagina}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
+          <p className="mb-3 text-sm font-medium">Limite de Crédito por Cliente</p>
+          <Table className="table-fixed">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Cliente</TableHead>
+                <TableHead className="w-[20%] text-right">Limite</TableHead>
+                <TableHead className="w-[20%] text-right">Devedor</TableHead>
+                <TableHead className="w-[20%] text-center">Uso</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {limitesPag.paginados.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">Sem dados no período.</TableCell>
+                </TableRow>
+              ) : (
+                limitesPag.paginados.map((c) => (
+                  <TableRow key={c.clienteID}>
+                    <TableCell className="truncate">{c.clienteNome}</TableCell>
+                    <TableCell className="text-right">R$ {c.limiteCredito.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">R$ {c.saldoDevedor.toFixed(2)}</TableCell>
+                    <TableCell className="text-center">
+                      <StatusPill
+                        tone={c.percentualUtilizado >= 90 ? "danger" : c.percentualUtilizado >= 60 ? "warning" : "ok"}
+                        text={`${c.percentualUtilizado.toFixed(0)}%`}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <Pagination
+            paginaAtual={limitesPag.pagina}
+            totalPaginas={limitesPag.totalPaginas}
+            totalItens={limitesPag.totalItens}
+            itemLabel="clientes"
+            onPageChange={limitesPag.setPagina}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
