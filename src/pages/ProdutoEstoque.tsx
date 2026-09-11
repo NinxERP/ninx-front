@@ -368,7 +368,13 @@ export function ProdutoEstoque() {
         )}
 
         {data && (
-          <Pagination paginaAtual={pagina} totalPaginas={data.totalPages} totalItens={data.totalRecords} itemLabel="produtos" onPageChange={setPagina} />
+          <Pagination
+            paginaAtual={pagina}
+            totalPaginas={data.totalPages}
+            totalItens={data.totalRecords}
+            itemLabel="produtos"
+            onPageChange={setPagina}
+          />
         )}
       </div>
 

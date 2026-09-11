@@ -324,11 +324,18 @@ export function Venda() {
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border">
             {carrinho.length === 0 ? (
-              <EmptyState icon={ShoppingBasket} title="Carrinho vazio" message="Escaneie ou digite o código de barras de um produto para começar." />
+              <EmptyState
+                icon={ShoppingBasket}
+                title="Carrinho vazio"
+                message="Escaneie ou digite o código de barras de um produto para começar."
+              />
             ) : (
               <div className="scroll-styled min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
                 {carrinho.map((item) => (
-                  <div key={item.produtoID} className="flex min-w-0 items-center justify-between gap-3 border-b p-3 text-sm last:border-0">
+                  <div
+                    key={item.produtoID}
+                    className="flex min-w-0 items-center justify-between gap-3 border-b p-3 text-sm last:border-0"
+                  >
                     <div className="min-w-0">
                       <p className="truncate font-medium">{item.nome}</p>
                       <p className="truncate text-sm text-muted-foreground">
@@ -337,7 +344,13 @@ export function Venda() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <Button variant="outline" size="icon-sm" onClick={() => alterarQuantidade(item.produtoID, -1)}><Minus /></Button>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => alterarQuantidade(item.produtoID, -1)}
+                      >
+                        <Minus />
+                      </Button>
                       <Input
                         type="number"
                         min={1}
@@ -345,9 +358,23 @@ export function Venda() {
                         onChange={(e) => definirQuantidade(item.produtoID, Number(e.target.value))}
                         className="w-16 text-center [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       />
-                      <Button variant="outline" size="icon-sm" onClick={() => alterarQuantidade(item.produtoID, 1)}><Plus /></Button>
-                      <span className="w-20 text-right font-medium">R$ {(item.precoUnitario * item.quantidade).toFixed(2)}</span>
-                      <Button variant="ghost" size="icon-sm" onClick={() => alterarQuantidade(item.produtoID, -item.quantidade)}><Trash2 /></Button>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => alterarQuantidade(item.produtoID, 1)}
+                      >
+                        <Plus />
+                      </Button>
+                      <span className="w-20 text-right font-medium">
+                        R$ {(item.precoUnitario * item.quantidade).toFixed(2)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => alterarQuantidade(item.produtoID, -item.quantidade)}
+                      >
+                        <Trash2 />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -368,7 +395,9 @@ export function Venda() {
           <div className="flex gap-6">
             <button
               onClick={() => setTipoVenda((t) => (t === TipoVenda.Normal ? 0 : TipoVenda.Normal))}
-              className={`flex flex-1 flex-col items-center gap-3 rounded-lg border p-6 text-center transition-colors lg:p-10 ${tipoVenda === TipoVenda.Normal ? "border-primary bg-primary/10" : "hover:bg-accent"}`}
+              className={`flex flex-1 flex-col items-center gap-3 rounded-lg border p-6 text-center transition-colors lg:p-10 ${
+                tipoVenda === TipoVenda.Normal ? "border-primary bg-primary/10" : "hover:bg-accent"
+              }`}
             >
               <HandCoins className="size-8 text-muted-foreground lg:size-14" />
               <span className="text-lg font-medium lg:text-xl">Venda Normal</span>
@@ -376,7 +405,9 @@ export function Venda() {
             </button>
             <button
               onClick={() => setTipoVenda((t) => (t === TipoVenda.Fiado ? 0 : TipoVenda.Fiado))}
-              className={`flex flex-1 flex-col items-center gap-3 rounded-lg border p-6 text-center transition-colors lg:p-10 ${tipoVenda === TipoVenda.Fiado ? "border-primary bg-primary/10" : "hover:bg-accent"}`}
+              className={`flex flex-1 flex-col items-center gap-3 rounded-lg border p-6 text-center transition-colors lg:p-10 ${
+                tipoVenda === TipoVenda.Fiado ? "border-primary bg-primary/10" : "hover:bg-accent"
+              }`}
             >
               <User className="size-8 text-muted-foreground lg:size-14" />
               <span className="text-lg font-medium lg:text-xl">Venda Fiado</span>
@@ -386,7 +417,12 @@ export function Venda() {
 
           {tipoVenda === TipoVenda.Fiado && (
             <div className="flex flex-col gap-2">
-              <Input ref={clienteRef} placeholder="Buscar cliente por nome..." value={buscaCliente} onChange={(e) => setBuscaCliente(e.target.value)} />
+              <Input
+                ref={clienteRef}
+                placeholder="Buscar cliente por nome..."
+                value={buscaCliente}
+                onChange={(e) => setBuscaCliente(e.target.value)}
+              />
               {resultadosCliente.length > 0 && (
                 <div className="rounded-md border">
                   <div className="scroll-styled max-h-40 overflow-y-auto">
@@ -433,7 +469,9 @@ export function Venda() {
               <button
                 key={forma}
                 onClick={() => setMetodoPagamento(forma)}
-                className={`flex flex-1 flex-col items-center gap-2 rounded-lg border p-5 text-center text-sm transition-colors ${metodoPagamento === forma ? "border-primary bg-primary/10" : "hover:bg-accent"}`}
+                className={`flex flex-1 flex-col items-center gap-2 rounded-lg border p-5 text-center text-sm transition-colors ${
+                  metodoPagamento === forma ? "border-primary bg-primary/10" : "hover:bg-accent"
+                }`}
               >
                 <Icon className="size-7 text-muted-foreground" />
                 {label}

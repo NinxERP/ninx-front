@@ -16,10 +16,30 @@ export function VisaoGeralTab({ periodo }: { periodo: Periodo }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card size="sm"><CardContent><p className="text-2xl font-semibold">R$ {data.faturamento.total.toFixed(2)}</p><p className="text-sm text-muted-foreground">Faturamento</p></CardContent></Card>
-        <Card size="sm"><CardContent><p className="text-2xl font-semibold">{data.faturamento.quantidadeVendas}</p><p className="text-sm text-muted-foreground">Vendas</p></CardContent></Card>
-        <Card size="sm"><CardContent><p className="text-2xl font-semibold">R$ {data.faturamento.ticketMedio.toFixed(2)}</p><p className="text-sm text-muted-foreground">Ticket Médio</p></CardContent></Card>
-        <Card size="sm"><CardContent><p className="text-2xl font-semibold">R$ {data.fiado.saldoDevedorTotal.toFixed(2)}</p><p className="text-sm text-muted-foreground">Fiado em Aberto</p></CardContent></Card>
+        <Card size="sm">
+          <CardContent>
+            <p className="text-2xl font-semibold">R$ {data.faturamento.total.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground">Faturamento</p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <p className="text-2xl font-semibold">{data.faturamento.quantidadeVendas}</p>
+            <p className="text-sm text-muted-foreground">Vendas</p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <p className="text-2xl font-semibold">R$ {data.faturamento.ticketMedio.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground">Ticket Médio</p>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <p className="text-2xl font-semibold">R$ {data.fiado.saldoDevedorTotal.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground">Fiado em Aberto</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -32,7 +52,9 @@ export function VisaoGeralTab({ periodo }: { periodo: Periodo }) {
               <Pie
                 data={{
                   labels: data.formasPagamento.map((f) => f.formaPagamento),
-                  datasets: [{ data: data.formasPagamento.map((f) => f.valor), backgroundColor: CORES }],
+                  datasets: [
+                    { data: data.formasPagamento.map((f) => f.valor), backgroundColor: CORES },
+                  ],
                 }}
               />
             )}
@@ -48,7 +70,13 @@ export function VisaoGeralTab({ periodo }: { periodo: Periodo }) {
               <Bar
                 data={{
                   labels: data.produtosMaisVendidos.map((p) => p.produtoNome),
-                  datasets: [{ label: "Quantidade", data: data.produtosMaisVendidos.map((p) => p.quantidadeVendida), backgroundColor: CORES[0] }],
+                  datasets: [
+                    {
+                      label: "Quantidade",
+                      data: data.produtosMaisVendidos.map((p) => p.quantidadeVendida),
+                      backgroundColor: CORES[0],
+                    },
+                  ],
                 }}
                 options={{ indexAxis: "y" as const }}
               />

@@ -308,7 +308,13 @@ export function Cliente() {
         )}
 
         {data && (
-          <Pagination paginaAtual={pagina} totalPaginas={data.totalPages} totalItens={data.totalRecords} itemLabel="clientes" onPageChange={setPagina} />
+          <Pagination
+            paginaAtual={pagina}
+            totalPaginas={data.totalPages}
+            totalItens={data.totalRecords}
+            itemLabel="clientes"
+            onPageChange={setPagina}
+          />
         )}
       </div>
 

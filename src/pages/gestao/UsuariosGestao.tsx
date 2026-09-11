@@ -213,14 +213,18 @@ export function UsuariosGestao() {
               <button
                 type="button"
                 onClick={() => alternarEscopo(false)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${!verTodos ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  !verTodos ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
               >
                 Equipe deste comércio
               </button>
               <button
                 type="button"
                 onClick={() => alternarEscopo(true)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${verTodos ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  verTodos ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
               >
                 Todos os usuários
               </button>
