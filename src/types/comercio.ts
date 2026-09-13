@@ -1,6 +1,5 @@
 export interface ComercioRequest {
   nome: string;
-  endereco?: string;
   enderecoLogradouro?: string;
   enderecoNumero?: string;
   enderecoComplemento?: string;
@@ -16,7 +15,6 @@ export interface ComercioRequest {
 export interface ComercioResponse {
   comercioID: number;
   nomeComercio?: string;
-  endereco?: string;
   enderecoLogradouro?: string;
   enderecoNumero?: string;
   enderecoComplemento?: string;
