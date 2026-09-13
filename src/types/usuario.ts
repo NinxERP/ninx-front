@@ -56,6 +56,6 @@ export interface UsuarioComercioResponse {
   comercioID: number;
   cargoID: number;
   cargoNome: string;
-  cargoPeso: number;
+  cargoEhProprietario: boolean;
   ativo: boolean;
 }

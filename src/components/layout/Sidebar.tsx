@@ -19,6 +19,14 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import {
+  PERMISSAO_GERENCIAR_ASSINATURA,
+  PERMISSAO_GERENCIAR_CARGOS,
+  PERMISSAO_GERENCIAR_COMERCIO,
+  PERMISSAO_GERENCIAR_USUARIOS,
+  PERMISSAO_VISUALIZAR_RELATORIOS,
+  PERMISSOES_GESTAO,
+} from "@/lib/permissoes";
 import { useTheme } from "@/context/ThemeContext";
 import { useNavigationGuard } from "@/context/NavigationGuardContext";
 import { TrocarComercioDialog } from "@/components/layout/TrocarComercioDialog";
@@ -46,7 +54,7 @@ function Item({ to, icon: Icon, label }: { to: string; icon: typeof Home; label:
 
 export function Sidebar() {
   const { user, logout, availableComercios } = useAuth();
-  const { isOwnerOrHigher } = usePermissions();
+  const { hasPermission, hasAnyPermission } = usePermissions();
   const { theme, toggleTheme } = useTheme();
   const [trocarComercioAberto, setTrocarComercioAberto] = useState(false);
 
@@ -77,17 +85,17 @@ export function Sidebar() {
         <Item to="/mainpage/venda" icon={ShoppingCart} label="Realizar Venda" />
         <Item to="/mainpage/clientes" icon={Users} label="Meus Clientes" />
 
-        {isOwnerOrHigher && (
+        {hasAnyPermission(PERMISSOES_GESTAO) && (
           <>
             <p className="px-3 pt-5 pb-1 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
               Gestão
             </p>
-            <Item to="/mainpage/relatorios" icon={BarChart3} label="Relatórios" />
-            <Item to="/mainpage/assinatura" icon={CreditCard} label="Minha Assinatura" />
-            <Item to="/mainpage/gestao/usuarios" icon={UserCog} label="Usuários" />
-            <Item to="/mainpage/gestao/cargos" icon={Shield} label="Cargos" />
+            {hasPermission(PERMISSAO_VISUALIZAR_RELATORIOS) && <Item to="/mainpage/relatorios" icon={BarChart3} label="Relatórios" />}
+            {hasPermission(PERMISSAO_GERENCIAR_ASSINATURA) && <Item to="/mainpage/assinatura" icon={CreditCard} label="Minha Assinatura" />}
+            {hasPermission(PERMISSAO_GERENCIAR_USUARIOS) && <Item to="/mainpage/gestao/usuarios" icon={UserCog} label="Usuários" />}
+            {hasPermission(PERMISSAO_GERENCIAR_CARGOS) && <Item to="/mainpage/gestao/cargos" icon={Shield} label="Cargos" />}
             <Item to="/mainpage/gestao/categoria-produto" icon={Tag} label="Categorias" />
-            <Item to="/mainpage/gestao/comercio" icon={Store} label="Comércio" />
+            {hasPermission(PERMISSAO_GERENCIAR_COMERCIO) && <Item to="/mainpage/gestao/comercio" icon={Store} label="Comércio" />}
           </>
         )}
       </nav>

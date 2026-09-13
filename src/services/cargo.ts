@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api/client";
 import { toQueryString } from "@/lib/query";
-import type { AtualizarCargoRequest, CargoResponse, CriarCargoRequest } from "@/types";
+import type { AtualizarCargoRequest, CargoResponse, CriarCargoRequest, PermissaoResponse } from "@/types";
 
 const KEY = "cargos";
 
@@ -9,6 +9,13 @@ export function useCargos(comercioId?: number) {
   return useQuery({
     queryKey: [KEY, comercioId],
     queryFn: () => api.get<CargoResponse[]>(`/api/Cargo${toQueryString({ comercioId })}`),
+  });
+}
+
+export function usePermissoesDisponiveis() {
+  return useQuery({
+    queryKey: [KEY, "permissoes"],
+    queryFn: () => api.get<PermissaoResponse[]>("/api/Cargo/permissoes"),
   });
 }
 

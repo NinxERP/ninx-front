@@ -21,7 +21,8 @@ export interface JwtClaims {
   comercioId: number;
   cargoId: number;
   cargoNome: string;
-  cargoPeso: number;
+  cargoEhProprietario: boolean;
+  cargoPermissoes: string[];
   nomeComercio: string;
   admin: boolean;
 }

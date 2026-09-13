@@ -3,19 +3,20 @@ import { Package, ShoppingCart, Users, BarChart3, CreditCard, Settings } from "l
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSAO_GERENCIAR_ASSINATURA, PERMISSAO_VISUALIZAR_RELATORIOS, PERMISSOES_GESTAO } from "@/lib/permissoes";
 
 const cards = [
-  { to: "/mainpage/produtosestoque", icon: Package, title: "Produtos e Estoque", description: "Gerencie produtos e quantidades", ownerOnly: false },
-  { to: "/mainpage/venda", icon: ShoppingCart, title: "Realizar Venda", description: "Abrir o ponto de venda", ownerOnly: false, highlight: true },
-  { to: "/mainpage/clientes", icon: Users, title: "Meus Clientes", description: "Cadastro e fiado de clientes", ownerOnly: false },
-  { to: "/mainpage/relatorios", icon: BarChart3, title: "Relatórios", description: "Vendas, financeiro e estoque", ownerOnly: true },
-  { to: "/mainpage/assinatura", icon: CreditCard, title: "Minha Assinatura", description: "Plano e histórico de pagamentos", ownerOnly: true },
-  { to: "/mainpage/gestao", icon: Settings, title: "Gestão", description: "Usuários, cargos, categorias, comércio", ownerOnly: true },
+  { to: "/mainpage/produtosestoque", icon: Package, title: "Produtos e Estoque", description: "Gerencie produtos e quantidades", permissoes: null },
+  { to: "/mainpage/venda", icon: ShoppingCart, title: "Realizar Venda", description: "Abrir o ponto de venda", permissoes: null, highlight: true },
+  { to: "/mainpage/clientes", icon: Users, title: "Meus Clientes", description: "Cadastro e fiado de clientes", permissoes: null },
+  { to: "/mainpage/relatorios", icon: BarChart3, title: "Relatórios", description: "Vendas, financeiro e estoque", permissoes: [PERMISSAO_VISUALIZAR_RELATORIOS] },
+  { to: "/mainpage/assinatura", icon: CreditCard, title: "Minha Assinatura", description: "Plano e histórico de pagamentos", permissoes: [PERMISSAO_GERENCIAR_ASSINATURA] },
+  { to: "/mainpage/gestao", icon: Settings, title: "Gestão", description: "Usuários, cargos, categorias, comércio", permissoes: PERMISSOES_GESTAO },
 ];
 
 export function MainPage() {
   const { user } = useAuth();
-  const { isOwnerOrHigher } = usePermissions();
+  const { hasAnyPermission } = usePermissions();
   const navigate = useNavigate();
 
   return (
@@ -25,7 +26,7 @@ export function MainPage() {
 
       <div className="@container grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards
-          .filter((c) => !c.ownerOnly || isOwnerOrHigher)
+          .filter((c) => !c.permissoes || hasAnyPermission(c.permissoes))
           .map((c) => (
             <Card
               key={c.to}

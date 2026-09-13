@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { useAtualizarCargo, useCargos, useCriarCargo, useExcluirCargo } from "@/services/cargo";
+import { useAtualizarCargo, useCargos, useCriarCargo, useExcluirCargo, usePermissoesDisponiveis } from "@/services/cargo";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/services/api/client";
 import type { CargoResponse } from "@/types";
@@ -18,7 +18,11 @@ export function CargoGestao() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: cargos, isLoading } = useCargos(user?.comercioId);
-  const cargosOrdenados = useMemo(() => [...(cargos ?? [])].sort((a, b) => b.peso - a.peso), [cargos]);
+  const { data: permissoesDisponiveis } = usePermissoesDisponiveis();
+  const cargosOrdenados = useMemo(
+    () => [...(cargos ?? [])].sort((a, b) => Number(b.ehProprietario) - Number(a.ehProprietario) || a.nome.localeCompare(b.nome)),
+    [cargos],
+  );
   const criar = useCriarCargo();
   const atualizar = useAtualizarCargo();
   const excluir = useExcluirCargo();
@@ -26,7 +30,7 @@ export function CargoGestao() {
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<CargoResponse | null>(null);
   const [nome, setNome] = useState("");
-  const [peso, setPeso] = useState("");
+  const [permissaoIds, setPermissaoIds] = useState<number[]>([]);
   const [cargoBase, setCargoBase] = useState(false);
   const [exclusao, setExclusao] = useState<CargoResponse | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -34,7 +38,7 @@ export function CargoGestao() {
   const abrirNovo = () => {
     setEditando(null);
     setNome("");
-    setPeso("");
+    setPermissaoIds([]);
     setCargoBase(false);
     setErro(null);
     setModalAberto(true);
@@ -43,26 +47,24 @@ export function CargoGestao() {
   const abrirEdicao = (cargo: CargoResponse) => {
     setEditando(cargo);
     setNome(cargo.nome);
-    setPeso(String(cargo.peso));
+    setPermissaoIds(cargo.permissoes.map((p) => p.permissaoID));
     setErro(null);
     setModalAberto(true);
   };
 
+  const alternarPermissao = (id: number) => {
+    setPermissaoIds((atual) => (atual.includes(id) ? atual.filter((p) => p !== id) : [...atual, id]));
+  };
+
   const salvar = async () => {
     setErro(null);
-    const pesoNum = Number(peso);
-
-    if (pesoNum <= 0 || (!user?.admin && pesoNum >= (user?.cargoPeso ?? 0))) {
-      setErro(`Peso deve ser um número positivo menor que ${user?.cargoPeso ?? 0}.`);
-      return;
-    }
 
     try {
       if (editando) {
-        await atualizar.mutateAsync({ id: editando.cargoID, body: { nome, peso: pesoNum } });
+        await atualizar.mutateAsync({ id: editando.cargoID, body: { nome, permissaoIds } });
         toast.success("Cargo atualizado.");
       } else {
-        await criar.mutateAsync({ nome, peso: pesoNum, comercioID: cargoBase ? undefined : user?.comercioId });
+        await criar.mutateAsync({ nome, permissaoIds, comercioID: cargoBase ? undefined : user?.comercioId });
         toast.success(cargoBase ? "Cargo base criado." : "Cargo criado.");
       }
       setModalAberto(false);
@@ -71,7 +73,7 @@ export function CargoGestao() {
     }
   };
 
-  const podeEditar = (cargo: CargoResponse) => !cargo.reservado && (cargo.comercioID != null || !!user?.admin);
+  const podeEditar = (cargo: CargoResponse) => !cargo.reservado && !cargo.ehProprietario && (cargo.comercioID != null || !!user?.admin);
 
   const confirmarExclusao = async () => {
     if (!exclusao) return;
@@ -113,7 +115,7 @@ export function CargoGestao() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Peso</TableHead>
+                  <TableHead>Permissões</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -129,7 +131,13 @@ export function CargoGestao() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {cargo.peso}
+                      {cargo.ehProprietario ? (
+                        <span className="text-sm text-muted-foreground">Todas (proprietário)</span>
+                      ) : cargo.permissoes.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">Nenhuma</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">{cargo.permissoes.map((p) => p.nome).join(", ")}</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       {podeEditar(cargo) && (
@@ -158,7 +166,19 @@ export function CargoGestao() {
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <Input placeholder="Nome do cargo" value={nome} onChange={(e) => setNome(e.target.value)} />
-            <Input placeholder="Peso" type="number" value={peso} onChange={(e) => setPeso(e.target.value)} />
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium">Permissões</p>
+              {(permissoesDisponiveis ?? []).map((permissao) => (
+                <label key={permissao.permissaoID} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={permissaoIds.includes(permissao.permissaoID)}
+                    onChange={() => alternarPermissao(permissao.permissaoID)}
+                  />
+                  {permissao.nome}
+                </label>
+              ))}
+            </div>
             {!editando && user?.admin && (
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={cargoBase} onChange={(e) => setCargoBase(e.target.checked)} />
@@ -168,7 +188,7 @@ export function CargoGestao() {
             {erro && <p className="text-sm text-destructive">{erro}</p>}
           </div>
           <DialogFooter>
-            <Button onClick={salvar} disabled={salvando || !nome.trim() || !peso}>
+            <Button onClick={salvar} disabled={salvando || !nome.trim()}>
               {salvando ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>

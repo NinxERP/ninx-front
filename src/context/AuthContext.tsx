@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api, setAuthToken, setUnauthorizedHandler } from "@/services/api/client";
 import { decodeJwt } from "@/lib/jwt";
 import { buscarComerciosDoUsuario } from "@/services/comercio";
@@ -11,7 +12,8 @@ interface RawJwtClaims {
   comercioId: string;
   cargoId: string;
   cargoNome: string;
-  cargoPeso: string;
+  cargoEhProprietario: string;
+  cargoPermissoes: string;
   nomeComercio: string;
   admin: string;
 }
@@ -23,7 +25,8 @@ export interface SessionUser {
   comercioId: number;
   cargoId: number;
   cargoNome: string;
-  cargoPeso: number;
+  cargoEhProprietario: boolean;
+  cargoPermissoes: string[];
   nomeComercio: string;
   admin: boolean;
 }
@@ -37,7 +40,8 @@ function parseClaims(token: string): SessionUser {
     comercioId: Number(raw.comercioId),
     cargoId: Number(raw.cargoId),
     cargoNome: raw.cargoNome,
-    cargoPeso: Number(raw.cargoPeso),
+    cargoEhProprietario: raw.cargoEhProprietario === "True",
+    cargoPermissoes: raw.cargoPermissoes ? raw.cargoPermissoes.split(",") : [],
     nomeComercio: raw.nomeComercio,
     admin: raw.admin === "True",
   };
@@ -55,6 +59,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [availableComercios, setAvailableComercios] = useState<ComercioResponse[]>([]);
 
@@ -96,7 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const trocarComercio = useCallback(async (comercioId: number) => {
     const response = await api.post<{ token: string }>(`/api/TrocarComercio/${comercioId}`);
     applyToken(response.token);
-  }, []);
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
     () => ({ user, isAuthenticated: user !== null, availableComercios, login, trocarComercio, logout }),

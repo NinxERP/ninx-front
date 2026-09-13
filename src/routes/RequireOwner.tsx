@@ -1,10 +1,11 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSOES_GESTAO } from "@/lib/permissoes";
 
 export function RequireOwner() {
-  const { isOwnerOrHigher } = usePermissions();
+  const { hasAnyPermission } = usePermissions();
 
-  if (!isOwnerOrHigher) {
+  if (!hasAnyPermission(PERMISSOES_GESTAO)) {
     return <Navigate to="/mainpage" replace />;
   }
 
