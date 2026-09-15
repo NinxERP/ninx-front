@@ -16,6 +16,7 @@ export interface CriarVendaRequest {
   comercioID: number;
   usuarioID: number;
   clienteID?: number;
+  pessoaAutorizadaID?: number;
   tipoVenda: number;
   itensVenda: ItemVendaRequest[];
   pagamentos: PagamentoVendaRequest[];
@@ -42,6 +43,8 @@ export interface VendaResponse {
   documentos: DocumentoAssinaturaResponse[];
   valorPago: number;
   saldoDevedor: number;
+  /** Pessoa autorizada que fez a compra; ausente quando foi o titular. */
+  compradorNome?: string;
 }
 
 export interface FiltroRequest {

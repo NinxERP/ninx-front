@@ -17,8 +17,10 @@ export function useAppUpdater() {
       setStatus(result ? "available" : "idle");
       setUpdate(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao verificar atualizações.");
-      setStatus("error");
+      // Sem internet ou sem versão publicada: não é algo que o usuário precise resolver, então
+      // não abre diálogo. Falhas ao instalar uma atualização encontrada continuam sendo avisadas.
+      console.warn("Não foi possível verificar atualizações:", err);
+      setStatus("idle");
     }
   }, []);
 
