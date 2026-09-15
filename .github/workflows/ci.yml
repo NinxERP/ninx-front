@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Qualquer commit enviado, em qualquer branch. Tags ficam de fora: delas cuida o
+  # fluxo de release, que roda os testes por conta propria.
   push:
-    branches: [main, dsv]
+    tags-ignore: ["**"]
   pull_request:
 
 jobs:

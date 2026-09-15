@@ -6,7 +6,26 @@ on:
       - "v*"
 
 jobs:
+  # A release so publica se os testes passarem.
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - name: Checagem de tipos
+        run: npx tsc --noEmit
+      - name: Testes
+        run: npm test
+
   release:
+    needs: testes
     permissions:
       contents: write
     runs-on: windows-latest
