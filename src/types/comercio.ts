@@ -10,6 +10,7 @@ export interface ComercioRequest {
   cnpj?: string;
   assinaturaResponsavelBase64?: string;
   limiteCreditoPadrao?: number;
+  diaVencimentoFiado?: number;
 }
 
 export interface ComercioResponse {
@@ -25,4 +26,5 @@ export interface ComercioResponse {
   cnpj?: string;
   assinaturaResponsavelBase64?: string;
   limiteCreditoPadrao?: number;
+  diaVencimentoFiado?: number;
 }

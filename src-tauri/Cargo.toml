@@ -1,5 +1,7 @@
 [package]
 name = "ninx-front"
+# Não é a versão do aplicativo: o instalador e o updater usam a do package.json
+# (tauri.conf.json aponta para ele). Não precisa ser alterada.
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
