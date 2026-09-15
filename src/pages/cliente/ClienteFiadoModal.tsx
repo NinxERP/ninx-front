@@ -34,7 +34,17 @@ function statusVendaFiado(venda: VendaResponse) {
   return { tone: "ok" as const, texto: "Quitada" };
 }
 
-function AssinaturaQR({ guid, onAssinado }: { guid: string; onAssinado: () => void }) {
+export function AssinaturaQR({
+  guid,
+  onAssinado,
+  titulo = "Assinatura do Recibo",
+  documento = "O recibo",
+}: {
+  guid: string;
+  onAssinado: () => void;
+  titulo?: string;
+  documento?: string;
+}) {
   const verificar = useVerificarAssinatura();
   const [assinado, setAssinado] = useState(false);
   const link = `${SIGNATURE_BASE_URL}/?guid=${guid}`;
@@ -53,7 +63,7 @@ function AssinaturaQR({ guid, onAssinado }: { guid: string; onAssinado: () => vo
         </div>
         <div className="flex flex-col items-center gap-1">
           <p className="text-base font-semibold">Assinatura confirmada!</p>
-          <p className="text-sm text-muted-foreground">O recibo foi assinado com sucesso.</p>
+          <p className="text-sm text-muted-foreground">{documento} foi assinado com sucesso.</p>
         </div>
         <Button onClick={onAssinado}>Concluir</Button>
       </div>
@@ -63,7 +73,7 @@ function AssinaturaQR({ guid, onAssinado }: { guid: string; onAssinado: () => vo
   return (
     <div className="flex flex-col items-center gap-4 py-2">
       <div className="flex flex-col items-center gap-1 text-center">
-        <p className="text-base font-semibold">Assinatura do Recibo</p>
+        <p className="text-base font-semibold">{titulo}</p>
         <p className="text-sm text-muted-foreground">Peça ao cliente para escanear o código e assinar</p>
       </div>
 
@@ -241,6 +251,7 @@ export function ClienteFiadoModal({ cliente, onClose }: { cliente: ClienteRespon
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-center">Data</TableHead>
+                      <TableHead className="text-center">Comprador</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-center">Total</TableHead>
                       <TableHead className="text-center">Deve</TableHead>
@@ -257,6 +268,7 @@ export function ClienteFiadoModal({ cliente, onClose }: { cliente: ClienteRespon
                             <TableCell className="text-center text-sm">
                               {v.criadoEm ? new Date(v.criadoEm).toLocaleDateString("pt-BR") : "—"}
                             </TableCell>
+                            <TableCell className="max-w-40 truncate text-center text-sm">{v.compradorNome ?? "Titular"}</TableCell>
                             <TableCell className="text-center">
                               <StatusPill tone={status.tone} text={status.texto} />
                             </TableCell>
@@ -284,7 +296,7 @@ export function ClienteFiadoModal({ cliente, onClose }: { cliente: ClienteRespon
                             </TableCell>
                           </TableRow>
                           <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={5} className="p-0">
+                            <TableCell colSpan={6} className="p-0">
                               <Collapsible
                                 open={expandida}
                                 onOpenChange={(open) => setVendaExpandidaId(open ? v.vendaID : null)}

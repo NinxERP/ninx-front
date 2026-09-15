@@ -2,6 +2,7 @@ export * from "./enums";
 export * from "./common";
 export * from "./auth";
 export * from "./cliente";
+export * from "./contaFiado";
 export * from "./produto";
 export * from "./estoque";
 export * from "./categoriaProduto";

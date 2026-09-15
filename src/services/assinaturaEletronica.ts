@@ -61,8 +61,7 @@ export function useBaixarDocumentoPdf() {
       comercioNome?: string;
       clienteNome?: string;
     }) => {
-      const path = assinado ? `/api/AssinaturaEletronica/comercio/${guid}` : `/api/AssinaturaEletronica/${guid}`;
-      const doc = await api.get<AssinaturaEletronicaResponse>(path);
+      const doc = await api.get<AssinaturaEletronicaResponse>(`/api/AssinaturaEletronica/comercio/${guid}`);
       const base64 = assinado ? doc.documentoAssinadoBase64 : doc.documentoBase64;
       if (!base64) throw new Error("Documento indisponível para download.");
       return salvarBase64ComoPdf(base64, montarNomeArquivo(nomeArquivo, { comercioNome, clienteNome }));

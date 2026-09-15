@@ -28,6 +28,8 @@ import { buscarProdutoPorCodigoBarras } from "@/services/produto";
 import { buscarClientesPorNome } from "@/services/cliente";
 import { useCriarVenda, useEstornarVenda } from "@/services/venda";
 import { useVerificarAssinatura } from "@/services/assinaturaEletronica";
+import { useContaFiado } from "@/services/contaFiado";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCurrencyInput } from "@/hooks/useCurrencyInput";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useNavigationGuard } from "@/context/NavigationGuardContext";
@@ -68,6 +70,10 @@ export function Venda() {
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const [resultadosCliente, setResultadosCliente] = useState<ClienteResponse[]>([]);
   const [clienteSelecionado, setClienteSelecionado] = useState<ClienteResponse | null>(null);
+  const [compradorId, setCompradorId] = useState("titular");
+  const { data: contaFiado, isLoading: carregandoConta } = useContaFiado(
+    tipoVenda === TipoVenda.Fiado ? (clienteSelecionado?.clienteID ?? null) : null,
+  );
   const clienteRef = useRef<HTMLInputElement>(null);
 
   const [metodoPagamento, setMetodoPagamento] = useState<0 | FormaPagamento>(0);
@@ -216,7 +222,19 @@ export function Venda() {
     );
   };
 
-  const podeAvancarTipoVenda = tipoVenda === TipoVenda.Normal || (tipoVenda === TipoVenda.Fiado && clienteSelecionado !== null);
+  // Revogação pendente ainda compra: só deixa de valer quando o titular assina a nova versão do termo.
+  const autorizadosAtivos =
+    contaFiado?.autorizados.filter((p) => p.situacao === "Autorizada" || p.situacao === "Revogação pendente") ?? [];
+  const comprador = autorizadosAtivos.find((p) => String(p.pessoaAutorizadaID) === compradorId);
+  const excedeLimiteComprador = !!comprador?.limitePorCompra && totalVenda > comprador.limitePorCompra;
+  const itensComprador = [
+    { value: "titular", label: `${clienteSelecionado?.nome ?? "Titular"} (titular)` },
+    ...autorizadosAtivos.map((p) => ({ value: String(p.pessoaAutorizadaID), label: p.nome })),
+  ];
+
+  const podeAvancarTipoVenda =
+    tipoVenda === TipoVenda.Normal ||
+    (tipoVenda === TipoVenda.Fiado && clienteSelecionado !== null && !!contaFiado?.termoAtivo && !excedeLimiteComprador);
 
   const podeProsseguirPagamento = () => {
     if (metodoPagamento === 0) return false;
@@ -247,6 +265,7 @@ export function Venda() {
         comercioID: user.comercioId,
         usuarioID: user.usuarioId,
         clienteID: clienteSelecionado?.clienteID,
+        pessoaAutorizadaID: tipoVenda === TipoVenda.Fiado ? comprador?.pessoaAutorizadaID : undefined,
         tipoVenda,
         itensVenda: carrinho.map((i) => ({
           produtoID: i.produtoID,
@@ -298,6 +317,7 @@ export function Venda() {
     setCarrinho([]);
     setTipoVenda(0);
     setClienteSelecionado(null);
+    setCompradorId("titular");
     setBuscaCliente("");
     setMetodoPagamento(0);
     valorRecebido.reset(0);
@@ -462,6 +482,7 @@ export function Venda() {
                       className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-emerald-500/20 hover:text-foreground"
                       onClick={() => {
                         setClienteSelecionado(null);
+                        setCompradorId("titular");
                         setBuscaCliente("");
                         clienteRef.current?.focus();
                       }}
@@ -490,6 +511,7 @@ export function Venda() {
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           setClienteSelecionado(c);
+                          setCompradorId("titular");
                           setBuscaCliente(c.nome);
                           setResultadosCliente([]);
                         }}
@@ -514,6 +536,30 @@ export function Venda() {
                 </div>
                 )}
               </div>
+              {clienteSelecionado && !carregandoConta && contaFiado && !contaFiado.termoAtivo && (
+                <p className="text-sm text-destructive">
+                  Este cliente ainda não assinou o termo de abertura de conta. Gere o termo em Clientes &gt; Conta de fiado.
+                </p>
+              )}
+              {clienteSelecionado && contaFiado?.termoAtivo && autorizadosAtivos.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium">Quem está comprando</span>
+                  <Select items={itensComprador} value={compradorId} onValueChange={(v) => setCompradorId(v ?? "titular")}>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {itensComprador.map((i) => (
+                        <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {comprador?.limitePorCompra && (
+                    <span className={`text-sm ${excedeLimiteComprador ? "text-destructive" : "text-muted-foreground"}`}>
+                      Limite por compra de {comprador.nome}: R$ {formatarNumero(comprador.limitePorCompra)}
+                      {excedeLimiteComprador ? " (excedido nesta venda)" : ""}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
           <div className="flex justify-between pt-2">

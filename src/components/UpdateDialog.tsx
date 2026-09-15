@@ -18,7 +18,9 @@ export function UpdateDialog({ updater }: { updater: ReturnType<typeof useAppUpd
     <Dialog open={open} onOpenChange={(next) => !next && dismiss()}>
       <DialogContent showCloseButton={status !== "downloading"}>
         <DialogHeader>
-          <DialogTitle>Nova versão disponível</DialogTitle>
+          <DialogTitle>
+            {status === "error" ? "Falha na atualização" : status === "ready" ? "Atualização instalada" : "Nova versão disponível"}
+          </DialogTitle>
           <DialogDescription>
             {status === "error"
               ? error
@@ -33,9 +35,9 @@ export function UpdateDialog({ updater }: { updater: ReturnType<typeof useAppUpd
         {(status === "available" || status === "error") && (
           <DialogFooter>
             <Button variant="outline" onClick={dismiss}>
-              Agora não
+              {status === "error" ? "Fechar" : "Agora não"}
             </Button>
-            <Button onClick={installUpdate}>Atualizar e reiniciar</Button>
+            <Button onClick={installUpdate}>{status === "error" ? "Tentar novamente" : "Atualizar e reiniciar"}</Button>
           </DialogFooter>
         )}
       </DialogContent>

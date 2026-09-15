@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Pencil, Trash2, Users, Search, Wallet, Filter, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Users, Search, Wallet, Filter, Loader2, FileSignature } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import { validarCep, validarCpf } from "@/lib/validators";
 import { maskCep, maskCpf, maskNumerico, maskTelefone, UF_ITEMS } from "@/lib/masks";
 import { ApiError } from "@/services/api/client";
 import { ClienteFiadoModal } from "@/pages/cliente/ClienteFiadoModal";
+import { ClienteContaModal } from "@/pages/cliente/ClienteContaModal";
 import type { ClienteResponse } from "@/types";
 
 const PAGE_SIZE = 10;
@@ -86,6 +87,8 @@ export function Cliente() {
   const [erros, setErros] = useState<Partial<Record<keyof FormState, string>>>({});
   const [exclusao, setExclusao] = useState<ClienteResponse | null>(null);
   const [fiadoAberto, setFiadoAberto] = useState<ClienteResponse | null>(null);
+  const [contaAberta, setContaAberta] = useState<ClienteResponse | null>(null);
+  const [guidTermoCadastro, setGuidTermoCadastro] = useState<string | undefined>();
   const limiteCredito = useCurrencyInput(0);
   const [erroLimite, setErroLimite] = useState<string | null>(null);
 
@@ -167,8 +170,10 @@ export function Cliente() {
         await atualizar.mutateAsync({ id: editando.clienteID, body });
         toast.success("Cliente atualizado.");
       } else {
-        await criar.mutateAsync(body);
-        toast.success("Cliente criado.");
+        const novo = await criar.mutateAsync(body);
+        toast.success("Cliente criado. Peça ao cliente para assinar o termo de abertura.");
+        setGuidTermoCadastro(novo.documentoGuidTermoAbertura);
+        setContaAberta(novo);
       }
       setModalAberto(false);
     } catch (err) {
@@ -289,6 +294,12 @@ export function Cliente() {
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon-sm" onClick={() => setFiadoAberto(cliente)} title="Fiado">
                         <Wallet />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => {
+                        setGuidTermoCadastro(undefined);
+                        setContaAberta(cliente);
+                      }} title="Conta de fiado e pessoas autorizadas">
+                        <FileSignature />
                       </Button>
                       <Button
                         variant="ghost"
@@ -456,6 +467,7 @@ export function Cliente() {
       </Dialog>
 
       {fiadoAberto && <ClienteFiadoModal cliente={fiadoAberto} onClose={() => setFiadoAberto(null)} />}
+      {contaAberta && <ClienteContaModal cliente={contaAberta} guidInicial={guidTermoCadastro} onClose={() => setContaAberta(null)} />}
 
       <ConfirmDialog
         open={exclusao !== null}
