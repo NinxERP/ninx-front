@@ -33,6 +33,8 @@ export function ComercioGestao() {
   const [erroCnpj, setErroCnpj] = useState<string | null>(null);
   const [erroCep, setErroCep] = useState<string | null>(null);
   const limiteCredito = useCurrencyInput(0);
+  const [diaVencimento, setDiaVencimento] = useState("10");
+  const [erroDia, setErroDia] = useState<string | null>(null);
   const assinaturaRef = useRef<SignaturePadHandle>(null);
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export function ComercioGestao() {
     setUf(comercio.enderecoUF ?? "");
     setCep(maskCep(comercio.enderecoCEP ?? ""));
     limiteCredito.reset(comercio.limiteCreditoPadrao ?? 0);
+    setDiaVencimento(String(comercio.diaVencimentoFiado ?? 10));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comercio]);
 
@@ -54,8 +57,14 @@ export function ComercioGestao() {
     setErro(null);
     setErroCnpj(null);
     setErroCep(null);
+    setErroDia(null);
 
     let temErro = false;
+    const dia = Number(diaVencimento);
+    if (!Number.isInteger(dia) || dia < 1 || dia > 31) {
+      setErroDia("Informe um dia entre 1 e 31.");
+      temErro = true;
+    }
     if (cnpj && !validarCnpj(cnpj)) {
       setErroCnpj("CNPJ inválido.");
       temErro = true;
@@ -83,6 +92,7 @@ export function ComercioGestao() {
           enderecoUF: uf || undefined,
           enderecoCEP: cep || undefined,
           limiteCreditoPadrao: limiteCredito.value || undefined,
+          diaVencimentoFiado: dia,
           assinaturaResponsavelBase64: assinaturaBase64 ?? comercio?.assinaturaResponsavelBase64,
         },
       });
@@ -123,6 +133,22 @@ export function ComercioGestao() {
             <div className="flex flex-col gap-1.5">
               <Label>Limite de Crédito Padrão</Label>
               <Input value={limiteCredito.formatted} onChange={(e) => limiteCredito.onInputChange(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Dia de Vencimento do Fiado</Label>
+              <Input
+                type="number"
+                min={1}
+                max={31}
+                value={diaVencimento}
+                aria-invalid={!!erroDia}
+                onChange={(e) => setDiaVencimento(e.target.value)}
+              />
+              {erroDia ? (
+                <span className="text-sm text-destructive">{erroDia}</span>
+              ) : (
+                <span className="text-sm text-muted-foreground">As vendas fiadas vencem neste dia do mês.</span>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>CEP</Label>

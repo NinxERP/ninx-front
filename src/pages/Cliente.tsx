@@ -87,11 +87,13 @@ export function Cliente() {
   const [exclusao, setExclusao] = useState<ClienteResponse | null>(null);
   const [fiadoAberto, setFiadoAberto] = useState<ClienteResponse | null>(null);
   const limiteCredito = useCurrencyInput(0);
+  const [erroLimite, setErroLimite] = useState<string | null>(null);
 
   const abrirNovo = () => {
     setEditando(null);
     setForm(FORM_VAZIO);
     limiteCredito.reset(comercio?.limiteCreditoPadrao ?? 0);
+    setErroLimite(null);
     setErro(null);
     setErros({});
     setModalAberto(true);
@@ -113,6 +115,7 @@ export function Cliente() {
       cep: cliente.enderecoCEP,
     });
     limiteCredito.reset(cliente.limiteCredito ?? 0);
+    setErroLimite(null);
     setErro(null);
     setErros({});
     setModalAberto(true);
@@ -137,8 +140,12 @@ export function Cliente() {
       if (!form[campo].trim()) novosErros[campo] = label;
     }
 
+    // Todo cliente precisa de limite: o formulário já vem com o padrão do comércio, mas não pode ficar zerado.
+    const semLimite = limiteCredito.value <= 0;
+    setErroLimite(semLimite ? "Limite de crédito é obrigatório." : null);
+
     setErros(novosErros);
-    if (Object.keys(novosErros).length > 0) return;
+    if (Object.keys(novosErros).length > 0 || semLimite) return;
 
     const body = {
       nome: form.nome.trim(),
@@ -152,7 +159,7 @@ export function Cliente() {
       enderecoCidade: form.cidade,
       enderecoUF: form.uf.toUpperCase(),
       enderecoCEP: form.cep,
-      limiteCredito: limiteCredito.value || undefined,
+      limiteCredito: limiteCredito.value,
     };
 
     try {
@@ -431,7 +438,12 @@ export function Cliente() {
             </div>
             <div className="col-span-2 flex flex-col gap-1.5">
               <Label>Limite de Crédito</Label>
-              <Input value={limiteCredito.formatted} onChange={(e) => limiteCredito.onInputChange(e.target.value)} />
+              <Input
+                value={limiteCredito.formatted}
+                aria-invalid={!!erroLimite}
+                onChange={(e) => limiteCredito.onInputChange(e.target.value)}
+              />
+              {erroLimite && <span className="text-sm text-destructive">{erroLimite}</span>}
             </div>
           </div>
 

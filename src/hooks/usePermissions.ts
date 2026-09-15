@@ -1,17 +1,16 @@
 import { useAuth } from "@/context/AuthContext";
 
-const PESO_DONO = 20;
-const PESO_FUNCIONARIO = 10;
-
 export function usePermissions() {
   const { user } = useAuth();
+  const isOwner = Boolean(user?.admin || user?.cargoEhProprietario);
 
-  const hasMinPeso = (peso: number) => Boolean(user?.admin || (user?.cargoPeso ?? 0) >= peso);
+  const hasPermission = (chave: string) => Boolean(isOwner || user?.cargoPermissoes.includes(chave));
+  const hasAnyPermission = (chaves: string[]) => Boolean(isOwner || chaves.some((c) => user?.cargoPermissoes.includes(c)));
 
   return {
     isPlatformAdmin: user?.admin ?? false,
-    hasMinPeso,
-    isOwnerOrHigher: hasMinPeso(PESO_DONO),
-    isFuncionarioOrHigher: hasMinPeso(PESO_FUNCIONARIO),
+    isOwner,
+    hasPermission,
+    hasAnyPermission,
   };
 }

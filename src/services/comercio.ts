@@ -17,11 +17,13 @@ export function useComercio(comercioId?: number) {
   });
 }
 
-export function useComerciosPlataforma(page: number, pageSize: number, enabled: boolean) {
+export function useComerciosPlataforma(page: number, pageSize: number, termoBusca: string, enabled: boolean) {
   return useQuery({
-    queryKey: [KEY, "all", page, pageSize],
+    queryKey: [KEY, "all", page, pageSize, termoBusca],
     queryFn: () =>
-      api.get<PaginatedResponse<ComercioResponse>>(`/api/Comercio/All${toQueryString({ pageNumber: page, pageSize })}`),
+      api.get<PaginatedResponse<ComercioResponse>>(
+        `/api/Comercio/All${toQueryString({ pageNumber: page, pageSize, termoBusca })}`,
+      ),
     enabled,
   });
 }

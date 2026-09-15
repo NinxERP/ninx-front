@@ -46,7 +46,7 @@ export function UsuariosGestao() {
   const data = verTodos ? dataPlataforma : dataComercio;
   const isLoading = verTodos ? loadingPlataforma : loadingComercio;
   const { data: cargos } = useCargos(user?.comercioId);
-  const cargosDisponiveis = (cargos ?? []).filter((c) => c.ativo && (user?.admin || c.peso < (user?.cargoPeso ?? 0)));
+  const cargosDisponiveis = (cargos ?? []).filter((c) => c.ativo && (user?.admin || !c.ehProprietario));
 
   const alternarEscopo = (todos: boolean) => {
     setVerTodos(todos);

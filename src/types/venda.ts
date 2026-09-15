@@ -16,7 +16,6 @@ export interface CriarVendaRequest {
   comercioID: number;
   usuarioID: number;
   clienteID?: number;
-  observacoes?: string;
   tipoVenda: number;
   itensVenda: ItemVendaRequest[];
   pagamentos: PagamentoVendaRequest[];

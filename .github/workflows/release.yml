@@ -32,6 +32,12 @@ jobs:
         with:
           workspaces: src-tauri
 
+      # A tag é a única fonte da versão: v1.2.3 vira "version": "1.2.3" no package.json,
+      # que o tauri.conf.json lê. Não é preciso editar versão à mão antes de criar a tag.
+      - name: Definir versao a partir da tag
+        shell: bash
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+
       - name: Install frontend dependencies
         run: npm ci
 

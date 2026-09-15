@@ -1,6 +1,5 @@
 export interface ComercioRequest {
   nome: string;
-  endereco?: string;
   enderecoLogradouro?: string;
   enderecoNumero?: string;
   enderecoComplemento?: string;
@@ -11,12 +10,12 @@ export interface ComercioRequest {
   cnpj?: string;
   assinaturaResponsavelBase64?: string;
   limiteCreditoPadrao?: number;
+  diaVencimentoFiado?: number;
 }
 
 export interface ComercioResponse {
   comercioID: number;
   nomeComercio?: string;
-  endereco?: string;
   enderecoLogradouro?: string;
   enderecoNumero?: string;
   enderecoComplemento?: string;
@@ -27,4 +26,5 @@ export interface ComercioResponse {
   cnpj?: string;
   assinaturaResponsavelBase64?: string;
   limiteCreditoPadrao?: number;
+  diaVencimentoFiado?: number;
 }
