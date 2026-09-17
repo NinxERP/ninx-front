@@ -29,7 +29,10 @@ export function useCriarCliente() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: ClienteRequest) => api.post<ClienteResponse>("/api/Cliente", body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [KEY] });
+      queryClient.invalidateQueries({ queryKey: ["conta-fiado"] });
+    },
   });
 }
 
@@ -37,7 +40,10 @@ export function useAtualizarCliente() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: ClienteRequest }) => api.put<ClienteResponse>(`/api/Cliente/${id}`, body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [KEY] });
+      queryClient.invalidateQueries({ queryKey: ["conta-fiado"] });
+    },
   });
 }
 

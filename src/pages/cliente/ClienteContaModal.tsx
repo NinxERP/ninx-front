@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { useCurrencyInput } from "@/hooks/useCurrencyInput";
 import { useAuth } from "@/context/AuthContext";
+import { formatarNumero } from "@/lib/currency";
 import { maskCpf } from "@/lib/masks";
 import { validarCpf } from "@/lib/validators";
 import { ApiError } from "@/services/api/client";
@@ -25,6 +26,8 @@ import type { ClienteResponse, PessoaAutorizadaResponse } from "@/types";
 const PARENTESCO_ITEMS = Object.entries(PARENTESCO_LABEL).map(([value, label]) => ({ value, label }));
 
 const TONE_SITUACAO = { Autorizada: "ok", Pendente: "warning", "Revogação pendente": "warning", Revogada: "neutral" } as const;
+
+const reais = (valor: number) => `R$ ${formatarNumero(valor)}`;
 
 const TERMO_STATUS = {
   Ativo: { tone: "ok", texto: "Vigente" },
@@ -74,7 +77,7 @@ export function ClienteContaModal({
           cpf: cpf || undefined,
           parentesco: Number(parentesco),
           menorDeIdade,
-          limitePorCompra: limite.value > 0 ? limite.value : undefined,
+          limiteCredito: limite.value > 0 ? limite.value : undefined,
         },
       });
       setNome("");
@@ -114,7 +117,7 @@ export function ClienteContaModal({
 
   return (
     <Dialog open onOpenChange={(next) => !next && (guidAssinatura ? setGuidAssinatura(null) : onClose())}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Conta de fiado — {cliente.nome}</DialogTitle>
         </DialogHeader>
@@ -129,7 +132,9 @@ export function ClienteContaModal({
         ) : isLoading || !conta ? (
           <p className="py-6 text-center text-sm text-muted-foreground">Carregando...</p>
         ) : (
-          <div className="scroll-styled flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+          // shrink-0: sem ele os cartões encolhem dentro da coluna rolável e cortam o conteúdo.
+          // px-1: dá espaço para a borda (ring) dos cartões, que fica fora da caixa e era cortada.
+          <div className="scroll-styled -mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1 pb-1 *:shrink-0">
             <Card>
               <CardContent className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -143,6 +148,15 @@ export function ClienteContaModal({
                   </div>
                   <StatusPill tone={conta.termoAtivo ? "ok" : "danger"} text={conta.termoAtivo ? "Conta ativa" : "Sem termo"} />
                 </div>
+
+                <p className="text-sm">
+                  Limite de crédito: <span className="font-medium">{reais(conta.limiteCredito)}</span>
+                  {conta.limitePendente !== undefined && conta.limitePendente !== null && (
+                    <span className="text-amber-600 dark:text-amber-400">
+                      {" "}· novo limite de {reais(conta.limitePendente)} aguardando a assinatura do titular
+                    </span>
+                  )}
+                </p>
 
                 {conta.termoAtivo && conta.precisaNovoTermo && (
                   <p className="text-sm text-amber-600 dark:text-amber-400">
@@ -190,7 +204,9 @@ export function ClienteContaModal({
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead>Parentesco</TableHead>
-                      <TableHead className="text-right">Limite por compra</TableHead>
+                      <TableHead className="text-right">Limite</TableHead>
+                      <TableHead className="text-right">Deve</TableHead>
+                      <TableHead className="text-right">Disponível</TableHead>
                       <TableHead>Situação</TableHead>
                       <TableHead className="w-12" />
                     </TableRow>
@@ -203,8 +219,12 @@ export function ClienteContaModal({
                           {PARENTESCO_LABEL[p.parentesco]}
                           {p.menorDeIdade ? " (menor)" : ""}
                         </TableCell>
-                        <TableCell className="text-right">
-                          {p.limitePorCompra ? `R$ ${p.limitePorCompra.toFixed(2).replace(".", ",")}` : "—"}
+                        <TableCell className="text-right">{p.limiteCredito ? reais(p.limiteCredito) : "Da conta"}</TableCell>
+                        <TableCell className="text-right">{reais(p.saldoDevedor)}</TableCell>
+                        <TableCell
+                          className={`text-right font-medium ${p.saldoDisponivel !== undefined && p.saldoDisponivel !== null && p.saldoDisponivel <= 0 ? "text-destructive" : ""}`}
+                        >
+                          {p.saldoDisponivel !== undefined && p.saldoDisponivel !== null ? reais(p.saldoDisponivel) : "—"}
                         </TableCell>
                         <TableCell>
                           <StatusPill tone={TONE_SITUACAO[p.situacao]} text={p.situacao} />
@@ -230,6 +250,7 @@ export function ClienteContaModal({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Versão</TableHead>
+                      <TableHead className="text-right">Limite</TableHead>
                       <TableHead>Gerada em</TableHead>
                       <TableHead>Assinada em</TableHead>
                       <TableHead>Situação</TableHead>
@@ -240,6 +261,7 @@ export function ClienteContaModal({
                     {conta.termos.map((t) => (
                       <TableRow key={t.versao}>
                         <TableCell>{t.versao}</TableCell>
+                        <TableCell className="text-right">{reais(t.limiteCredito)}</TableCell>
                         <TableCell>{formatarData(t.criadoEm)}</TableCell>
                         <TableCell>{formatarData(t.assinadoEm) || "—"}</TableCell>
                         <TableCell>
@@ -297,7 +319,7 @@ export function ClienteContaModal({
                     </Select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label>Limite por compra (opcional)</Label>
+                    <Label>Limite de crédito próprio (opcional)</Label>
                     <Input value={limite.formatted} onChange={(e) => limite.onInputChange(e.target.value)} />
                   </div>
                   <label className="flex items-center gap-2 self-end pb-2 text-sm">

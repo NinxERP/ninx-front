@@ -6,7 +6,7 @@ import {
   calcularTroco,
   compradoresDaConta,
   definirQuantidade,
-  excedeLimitePorCompra,
+  excessoLimiteAutorizado,
   podeAvancarTipoVenda,
   podeProsseguirPagamento,
   removerItem,
@@ -54,6 +54,7 @@ function autorizado(over: Partial<PessoaAutorizadaResponse> = {}): PessoaAutoriz
     parentesco: 1,
     menorDeIdade: false,
     criadoEm: "2026-09-01",
+    saldoDevedor: 0,
     situacao: "Autorizada",
     ...over,
   };
@@ -63,6 +64,7 @@ function conta(over: Partial<ContaFiadoResponse> = {}): ContaFiadoResponse {
   return {
     clienteID: 1,
     termoAtivo: true,
+    limiteCredito: 500,
     precisaNovoTermo: false,
     autorizados: [],
     termos: [],
@@ -147,12 +149,12 @@ test("troco só existe em dinheiro e nunca é negativo", () => {
 
 test("venda à vista avança sem cliente; fiado exige cliente com termo assinado", () => {
   assert.equal(
-    podeAvancarTipoVenda({ tipoVenda: TipoVenda.Normal, clienteSelecionado: false, total: 10 }),
+    podeAvancarTipoVenda({ tipoVenda: TipoVenda.Normal, clienteSelecionado: false }),
     true,
   );
-  assert.equal(podeAvancarTipoVenda({ tipoVenda: 0, clienteSelecionado: false, total: 10 }), false);
+  assert.equal(podeAvancarTipoVenda({ tipoVenda: 0, clienteSelecionado: false }), false);
   assert.equal(
-    podeAvancarTipoVenda({ tipoVenda: TipoVenda.Fiado, clienteSelecionado: false, conta: conta(), total: 10 }),
+    podeAvancarTipoVenda({ tipoVenda: TipoVenda.Fiado, clienteSelecionado: false, conta: conta() }),
     false,
   );
   assert.equal(
@@ -160,35 +162,53 @@ test("venda à vista avança sem cliente; fiado exige cliente com termo assinado
       tipoVenda: TipoVenda.Fiado,
       clienteSelecionado: true,
       conta: conta({ termoAtivo: false }),
-      total: 10,
     }),
     false,
   );
   assert.equal(
-    podeAvancarTipoVenda({ tipoVenda: TipoVenda.Fiado, clienteSelecionado: true, conta: conta(), total: 10 }),
+    podeAvancarTipoVenda({ tipoVenda: TipoVenda.Fiado, clienteSelecionado: true, conta: conta() }),
     true,
   );
 });
 
 test("fiado sem a conta carregada ainda não avança", () => {
-  assert.equal(podeAvancarTipoVenda({ tipoVenda: TipoVenda.Fiado, clienteSelecionado: true, total: 10 }), false);
+  assert.equal(podeAvancarTipoVenda({ tipoVenda: TipoVenda.Fiado, clienteSelecionado: true }), false);
 });
 
-test("compra de autorizado respeita o limite por compra", () => {
-  const comprador = autorizado({ limitePorCompra: 50 });
+test("limite do autorizado é acumulado: conta o que ele já deve", () => {
+  // limite 50, já deve 30: sobram 20
+  const comprador = autorizado({ limiteCredito: 50, saldoDevedor: 30, saldoDisponivel: 20 });
 
-  assert.equal(excedeLimitePorCompra(comprador, 50), false);
-  assert.equal(excedeLimitePorCompra(comprador, 50.01), true);
-  assert.equal(excedeLimitePorCompra(autorizado(), 9999), false);
-  assert.equal(excedeLimitePorCompra(undefined, 9999), false);
+  assert.equal(excessoLimiteAutorizado(comprador, 20), 0);
+  assert.equal(excessoLimiteAutorizado(comprador, 25), 5);
+  assert.equal(excessoLimiteAutorizado(autorizado(), 9999), 0); // sem limite próprio
+  assert.equal(excessoLimiteAutorizado(undefined, 9999), 0); // titular
+});
+
+test("limite do autorizado não trava a escolha do comprador, só o pagamento", () => {
+  const comprador = autorizado({ limiteCredito: 50, saldoDevedor: 30, saldoDisponivel: 20 });
+  const base = { tipoVenda: TipoVenda.Fiado, metodoPagamento: FormaPagamento.Dinheiro, total: 32, comprador } as const;
 
   assert.equal(
-    podeAvancarTipoVenda({
+    podeAvancarTipoVenda({ tipoVenda: TipoVenda.Fiado, clienteSelecionado: true, conta: conta({ autorizados: [comprador] }) }),
+    true,
+  );
+  assert.equal(podeProsseguirPagamento({ ...base, valorRecebido: 0 }), false); // 32 a prazo, cabem 20
+  assert.equal(podeProsseguirPagamento({ ...base, valorRecebido: 12 }), true); // entrada traz para 20
+  assert.equal(podeProsseguirPagamento({ ...base, valorRecebido: 11.99 }), false);
+});
+
+test("autorizado que já esgotou o limite só compra à vista", () => {
+  const comprador = autorizado({ limiteCredito: 50, saldoDevedor: 60, saldoDisponivel: -10 });
+
+  assert.equal(excessoLimiteAutorizado(comprador, 1), 11);
+  assert.equal(
+    podeProsseguirPagamento({
       tipoVenda: TipoVenda.Fiado,
-      clienteSelecionado: true,
-      conta: conta({ autorizados: [comprador] }),
+      metodoPagamento: FormaPagamento.Dinheiro,
+      total: 5,
+      valorRecebido: 4.99,
       comprador,
-      total: 80,
     }),
     false,
   );

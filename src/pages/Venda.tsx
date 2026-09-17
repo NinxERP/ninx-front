@@ -41,7 +41,7 @@ import {
   calcularTroco,
   compradoresDaConta,
   definirQuantidade as definirQuantidadeCarrinho,
-  excedeLimitePorCompra,
+  excessoLimiteAutorizado,
   podeAvancarTipoVenda as podeAvancarTipoVendaRegra,
   podeProsseguirPagamento as podeProsseguirPagamentoRegra,
   removerItem as removerItemCarrinho,
@@ -191,7 +191,7 @@ export function Venda() {
 
   const autorizadosAtivos = compradoresDaConta(contaFiado);
   const comprador = autorizadosAtivos.find((p) => String(p.pessoaAutorizadaID) === compradorId);
-  const excedeLimiteComprador = excedeLimitePorCompra(comprador, totalVenda);
+  const excessoAPrazo = excessoLimiteAutorizado(comprador, totalVenda - valorRecebido.value);
   const itensComprador = [
     { value: "titular", label: `${clienteSelecionado?.nome ?? "Titular"} (titular)` },
     ...autorizadosAtivos.map((p) => ({ value: String(p.pessoaAutorizadaID), label: p.nome })),
@@ -201,12 +201,16 @@ export function Venda() {
     tipoVenda,
     clienteSelecionado: clienteSelecionado !== null,
     conta: contaFiado,
-    comprador,
-    total: totalVenda,
   });
 
   const podeProsseguirPagamento = () =>
-    podeProsseguirPagamentoRegra({ tipoVenda, metodoPagamento, valorRecebido: valorRecebido.value, total: totalVenda });
+    podeProsseguirPagamentoRegra({
+      tipoVenda,
+      metodoPagamento,
+      valorRecebido: valorRecebido.value,
+      total: totalVenda,
+      comprador: tipoVenda === TipoVenda.Fiado ? comprador : undefined,
+    });
 
   const confirmarPagamento = async () => {
     if (!user) return;
@@ -516,10 +520,12 @@ export function Venda() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {comprador?.limitePorCompra && (
-                    <span className={`text-sm ${excedeLimiteComprador ? "text-destructive" : "text-muted-foreground"}`}>
-                      Limite por compra de {comprador.nome}: R$ {formatarNumero(comprador.limitePorCompra)}
-                      {excedeLimiteComprador ? " (excedido nesta venda)" : ""}
+                  {comprador?.saldoDisponivel !== undefined && comprador?.saldoDisponivel !== null && (
+                    <span className={`text-sm ${excessoAPrazo > 0 ? "text-amber-600" : "text-muted-foreground"}`}>
+                      {comprador.nome} pode dever ainda R$ {formatarNumero(Math.max(0, comprador.saldoDisponivel))}
+                      {excessoAPrazo > 0
+                        ? `. Esta compra passa em R$ ${formatarNumero(excessoAPrazo)}: receba ao menos esse valor de entrada.`
+                        : "."}
                     </span>
                   )}
                 </div>
@@ -577,6 +583,12 @@ export function Venda() {
                 <span className="text-muted-foreground">Troco</span>
                 <span className={`font-semibold ${troco > 0 ? "text-emerald-600" : ""}`}>R$ {formatarNumero(troco)}</span>
               </div>
+            )}
+
+            {tipoVenda === TipoVenda.Fiado && excessoAPrazo > 0 && valorRecebido.value < totalVenda && (
+              <p className="mt-3 border-t pt-3 text-sm text-destructive">
+                O valor a prazo passa o limite de {comprador?.nome} em R$ {formatarNumero(excessoAPrazo)}. Aumente a entrada.
+              </p>
             )}
 
             {tipoVenda === TipoVenda.Fiado && (

@@ -102,21 +102,28 @@ export function compradoresDaConta(conta?: ContaFiadoResponse): PessoaAutorizada
   return conta?.autorizados.filter((p) => p.situacao === "Autorizada" || p.situacao === "Revogação pendente") ?? [];
 }
 
-export function excedeLimitePorCompra(comprador: PessoaAutorizadaResponse | undefined, total: number): boolean {
-  return !!comprador?.limitePorCompra && total > comprador.limitePorCompra;
+/**
+ * Quanto do valor a prazo passa do que a pessoa autorizada ainda pode dever. Zero quando
+ * cabe ou quando a pessoa não tem limite próprio (vale só o limite da conta).
+ */
+export function excessoLimiteAutorizado(comprador: PessoaAutorizadaResponse | undefined, valorAPrazo: number): number {
+  if (comprador?.saldoDisponivel === undefined || comprador.saldoDisponivel === null) return 0;
+  return Math.max(0, valorAPrazo - comprador.saldoDisponivel);
 }
 
+/**
+ * O limite da pessoa autorizada não bloqueia aqui: uma entrada, informada na etapa
+ * seguinte, pode trazer o valor a prazo para dentro dele.
+ */
 export function podeAvancarTipoVenda(args: {
   tipoVenda: 0 | TipoVenda;
   clienteSelecionado: boolean;
   conta?: ContaFiadoResponse;
-  comprador?: PessoaAutorizadaResponse;
-  total: number;
 }): boolean {
-  const { tipoVenda, clienteSelecionado, conta, comprador, total } = args;
+  const { tipoVenda, clienteSelecionado, conta } = args;
   if (tipoVenda === TipoVenda.Normal) return true;
   if (tipoVenda !== TipoVenda.Fiado) return false;
-  return clienteSelecionado && !!conta?.termoAtivo && !excedeLimitePorCompra(comprador, total);
+  return clienteSelecionado && !!conta?.termoAtivo;
 }
 
 export function podeProsseguirPagamento(args: {
@@ -124,14 +131,16 @@ export function podeProsseguirPagamento(args: {
   metodoPagamento: 0 | FormaPagamento;
   valorRecebido: number;
   total: number;
+  comprador?: PessoaAutorizadaResponse;
 }): boolean {
-  const { tipoVenda, metodoPagamento, valorRecebido, total } = args;
+  const { tipoVenda, metodoPagamento, valorRecebido, total, comprador } = args;
   if (metodoPagamento === 0) return false;
   if (tipoVenda === TipoVenda.Normal) {
     return metodoPagamento === FormaPagamento.Dinheiro ? valorRecebido >= total : true;
   }
-  // Fiado: a entrada é opcional, mas não pode quitar a venda inteira.
-  return valorRecebido < total;
+  // Fiado: a entrada é opcional, mas não pode quitar a venda inteira, e o que fica a prazo
+  // precisa caber no limite da pessoa autorizada, se ela tiver um.
+  return valorRecebido < total && excessoLimiteAutorizado(comprador, total - valorRecebido) === 0;
 }
 
 /** Valor que vai no pagamento: à vista cobra o total, no fiado cobra a entrada digitada. */

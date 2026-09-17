@@ -20,6 +20,6 @@ export interface ClienteResponse extends ClienteRequest {
   criadoEm: string;
   comercioNome: string;
   saldoDevedor: number;
-  /** Só na resposta do cadastro: termo de abertura gerado para assinatura. */
+  /** Na resposta do cadastro e da edição que muda o limite: termo gerado para assinatura. */
   documentoGuidTermoAbertura?: string;
 }
