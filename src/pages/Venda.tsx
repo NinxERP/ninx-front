@@ -35,21 +35,25 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useNavigationGuard } from "@/context/NavigationGuardContext";
 import { useAuth } from "@/context/AuthContext";
 import { formatarNumero } from "@/lib/currency";
+import {
+  adicionarProduto,
+  alterarQuantidade as alterarQuantidadeCarrinho,
+  calcularTroco,
+  compradoresDaConta,
+  definirQuantidade as definirQuantidadeCarrinho,
+  excessoLimiteAutorizado,
+  podeAvancarTipoVenda as podeAvancarTipoVendaRegra,
+  podeProsseguirPagamento as podeProsseguirPagamentoRegra,
+  removerItem as removerItemCarrinho,
+  totalCarrinho,
+  valorDoPagamento,
+} from "@/lib/vendaFluxo";
+import type { CarrinhoItem } from "@/lib/vendaFluxo";
 import { FormaPagamento, TipoVenda } from "@/types";
 import { ApiError } from "@/services/api/client";
 import type { ClienteResponse, VendaResponse } from "@/types";
 
 const SIGNATURE_BASE_URL = import.meta.env.VITE_SIGNATURE_BASE_URL;
-
-interface CarrinhoItem {
-  produtoID: number;
-  nome: string;
-  codigoBarras?: string;
-  precoUnitario: number;
-  quantidade: number;
-  unidadeMedida: string;
-  estoqueDisponivel: number;
-}
 
 export function Venda() {
   const { user } = useAuth();
@@ -148,8 +152,8 @@ export function Venda() {
     return () => setGuard(null);
   }, [carrinho.length, etapa, setGuard]);
 
-  const totalVenda = carrinho.reduce((acc, i) => acc + i.precoUnitario * i.quantidade, 0);
-  const troco = metodoPagamento === FormaPagamento.Dinheiro ? Math.max(0, valorRecebido.value - totalVenda) : 0;
+  const totalVenda = totalCarrinho(carrinho);
+  const troco = calcularTroco(metodoPagamento, valorRecebido.value, totalVenda);
   const documentoGuid = vendaCriada?.documentos[0]?.documentoGuid;
 
   const adicionarPorCodigoBarras = async () => {
@@ -164,85 +168,49 @@ export function Venda() {
       return;
     }
 
-    setCarrinho((atual) => {
-      const existente = atual.find((i) => i.produtoID === produto.produtoID);
-      const quantidadeDesejada = (existente?.quantidade ?? 0) + 1;
-      if (quantidadeDesejada > produto.quantidade) {
-        toast.error("Estoque insuficiente.");
-        return atual;
-      }
-      if (existente) {
-        return atual.map((i) => (i.produtoID === produto.produtoID ? { ...i, quantidade: quantidadeDesejada } : i));
-      }
-      return [
-        ...atual,
-        {
-          produtoID: produto.produtoID,
-          nome: produto.nome,
-          codigoBarras: produto.codigoBarras,
-          precoUnitario: produto.precoVenda,
-          quantidade: 1,
-          unidadeMedida: produto.unidadeMedida,
-          estoqueDisponivel: produto.quantidade,
-        },
-      ];
-    });
+    setCarrinho((atual) => aplicar(adicionarProduto(atual, produto)));
+  };
+
+  /** Atualiza o carrinho e avisa quando a regra recusou a mudança. */
+  const aplicar = ({ carrinho: novo, erro }: { carrinho: CarrinhoItem[]; erro?: string }) => {
+    if (erro) toast.error(erro);
+    return novo;
   };
 
   const alterarQuantidade = (produtoID: number, delta: number) => {
-    setCarrinho((atual) =>
-      atual.map((i) => {
-        if (i.produtoID !== produtoID) return i;
-        const nova = Math.max(1, i.quantidade + delta);
-        if (nova > i.estoqueDisponivel) {
-          toast.error("Estoque insuficiente.");
-          return i;
-        }
-        return { ...i, quantidade: nova };
-      }),
-    );
+    setCarrinho((atual) => aplicar(alterarQuantidadeCarrinho(atual, produtoID, delta)));
   };
 
   const removerItem = (produtoID: number) => {
-    setCarrinho((atual) => atual.filter((i) => i.produtoID !== produtoID));
+    setCarrinho((atual) => removerItemCarrinho(atual, produtoID));
   };
 
   const definirQuantidade = (produtoID: number, quantidade: number) => {
-    setCarrinho((atual) =>
-      atual
-        .map((i) => {
-          if (i.produtoID !== produtoID) return i;
-          if (quantidade > i.estoqueDisponivel) {
-            toast.error("Estoque insuficiente.");
-            return i;
-          }
-          return { ...i, quantidade };
-        })
-        .filter((i) => i.quantidade > 0),
-    );
+    setCarrinho((atual) => aplicar(definirQuantidadeCarrinho(atual, produtoID, quantidade)));
   };
 
-  // Revogação pendente ainda compra: só deixa de valer quando o titular assina a nova versão do termo.
-  const autorizadosAtivos =
-    contaFiado?.autorizados.filter((p) => p.situacao === "Autorizada" || p.situacao === "Revogação pendente") ?? [];
+  const autorizadosAtivos = compradoresDaConta(contaFiado);
   const comprador = autorizadosAtivos.find((p) => String(p.pessoaAutorizadaID) === compradorId);
-  const excedeLimiteComprador = !!comprador?.limitePorCompra && totalVenda > comprador.limitePorCompra;
+  const excessoAPrazo = excessoLimiteAutorizado(comprador, totalVenda - valorRecebido.value);
   const itensComprador = [
     { value: "titular", label: `${clienteSelecionado?.nome ?? "Titular"} (titular)` },
     ...autorizadosAtivos.map((p) => ({ value: String(p.pessoaAutorizadaID), label: p.nome })),
   ];
 
-  const podeAvancarTipoVenda =
-    tipoVenda === TipoVenda.Normal ||
-    (tipoVenda === TipoVenda.Fiado && clienteSelecionado !== null && !!contaFiado?.termoAtivo && !excedeLimiteComprador);
+  const podeAvancarTipoVenda = podeAvancarTipoVendaRegra({
+    tipoVenda,
+    clienteSelecionado: clienteSelecionado !== null,
+    conta: contaFiado,
+  });
 
-  const podeProsseguirPagamento = () => {
-    if (metodoPagamento === 0) return false;
-    if (tipoVenda === TipoVenda.Normal) {
-      return metodoPagamento === FormaPagamento.Dinheiro ? valorRecebido.value >= totalVenda : true;
-    }
-    return valorRecebido.value < totalVenda;
-  };
+  const podeProsseguirPagamento = () =>
+    podeProsseguirPagamentoRegra({
+      tipoVenda,
+      metodoPagamento,
+      valorRecebido: valorRecebido.value,
+      total: totalVenda,
+      comprador: tipoVenda === TipoVenda.Fiado ? comprador : undefined,
+    });
 
   const confirmarPagamento = async () => {
     if (!user) return;
@@ -254,7 +222,7 @@ export function Venda() {
       toast.error("O carrinho está vazio.");
       return;
     }
-    const valorPagamento = tipoVenda === TipoVenda.Normal ? totalVenda : valorRecebido.value;
+    const valorPagamento = valorDoPagamento(tipoVenda, valorRecebido.value, totalVenda);
     if (tipoVenda === TipoVenda.Normal && valorPagamento <= 0) {
       toast.error("Valor de pagamento inválido.");
       return;
@@ -552,10 +520,12 @@ export function Venda() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {comprador?.limitePorCompra && (
-                    <span className={`text-sm ${excedeLimiteComprador ? "text-destructive" : "text-muted-foreground"}`}>
-                      Limite por compra de {comprador.nome}: R$ {formatarNumero(comprador.limitePorCompra)}
-                      {excedeLimiteComprador ? " (excedido nesta venda)" : ""}
+                  {comprador?.saldoDisponivel !== undefined && comprador?.saldoDisponivel !== null && (
+                    <span className={`text-sm ${excessoAPrazo > 0 ? "text-amber-600" : "text-muted-foreground"}`}>
+                      {comprador.nome} pode dever ainda R$ {formatarNumero(Math.max(0, comprador.saldoDisponivel))}
+                      {excessoAPrazo > 0
+                        ? `. Esta compra passa em R$ ${formatarNumero(excessoAPrazo)}: receba ao menos esse valor de entrada.`
+                        : "."}
                     </span>
                   )}
                 </div>
@@ -613,6 +583,12 @@ export function Venda() {
                 <span className="text-muted-foreground">Troco</span>
                 <span className={`font-semibold ${troco > 0 ? "text-emerald-600" : ""}`}>R$ {formatarNumero(troco)}</span>
               </div>
+            )}
+
+            {tipoVenda === TipoVenda.Fiado && excessoAPrazo > 0 && valorRecebido.value < totalVenda && (
+              <p className="mt-3 border-t pt-3 text-sm text-destructive">
+                O valor a prazo passa o limite de {comprador?.nome} em R$ {formatarNumero(excessoAPrazo)}. Aumente a entrada.
+              </p>
             )}
 
             {tipoVenda === TipoVenda.Fiado && (

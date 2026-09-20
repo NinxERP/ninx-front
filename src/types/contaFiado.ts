@@ -17,7 +17,7 @@ export interface PessoaAutorizadaRequest {
   cpf?: string;
   parentesco: number;
   menorDeIdade: boolean;
-  limitePorCompra?: number;
+  limiteCredito?: number;
 }
 
 export interface PessoaAutorizadaResponse {
@@ -26,7 +26,11 @@ export interface PessoaAutorizadaResponse {
   cpf?: string;
   parentesco: number;
   menorDeIdade: boolean;
-  limitePorCompra?: number;
+  limiteCredito?: number;
+  /** O que ainda está em aberto nas compras feitas por esta pessoa. */
+  saldoDevedor: number;
+  /** Limite menos saldo devedor; ausente quando a pessoa não tem limite próprio. */
+  saldoDisponivel?: number;
   criadoEm: string;
   autorizadaEm?: string;
   revogacaoSolicitadaEm?: string;
@@ -36,6 +40,7 @@ export interface PessoaAutorizadaResponse {
 
 export interface TermoAberturaResumoResponse {
   versao: number;
+  limiteCredito: number;
   status: "Aguardando" | "Ativo" | "Substituido" | "Cancelado";
   criadoEm: string;
   assinadoEm?: string;
@@ -45,6 +50,10 @@ export interface TermoAberturaResumoResponse {
 export interface ContaFiadoResponse {
   clienteID: number;
   termoAtivo: boolean;
+  /** Limite em vigor: o da última versão assinada. */
+  limiteCredito: number;
+  /** Novo limite de uma versão ainda não assinada. */
+  limitePendente?: number;
   termoAssinadoEm?: string;
   documentoGuidTermoAtivo?: string;
   documentoGuidTermoPendente?: string;

@@ -137,7 +137,8 @@ export function Cliente() {
     const novosErros: Partial<Record<keyof FormState, string>> = {};
 
     if (form.nome.trim().length < 3) novosErros.nome = "Nome deve ter no mínimo 3 caracteres.";
-    if (!validarCpf(form.cpf)) novosErros.cpf = "CPF inválido.";
+    // Na edição o CPF não muda e chega mascarado da API: só se valida no cadastro.
+    if (!editando && !validarCpf(form.cpf)) novosErros.cpf = "CPF inválido.";
     if (!validarCep(form.cep)) novosErros.cep = "CEP inválido.";
     for (const { campo, label } of REQUIRED_FIELDS) {
       if (!form[campo].trim()) novosErros[campo] = label;
@@ -167,8 +168,14 @@ export function Cliente() {
 
     try {
       if (editando) {
-        await atualizar.mutateAsync({ id: editando.clienteID, body });
-        toast.success("Cliente atualizado.");
+        const atualizado = await atualizar.mutateAsync({ id: editando.clienteID, body });
+        if (atualizado.documentoGuidTermoAbertura) {
+          toast.success("Cliente atualizado. O novo limite só vale depois que o cliente assinar a nova versão do termo.");
+          setGuidTermoCadastro(atualizado.documentoGuidTermoAbertura);
+          setContaAberta(atualizado);
+        } else {
+          toast.success("Cliente atualizado.");
+        }
       } else {
         const novo = await criar.mutateAsync(body);
         toast.success("Cliente criado. Peça ao cliente para assinar o termo de abertura.");
