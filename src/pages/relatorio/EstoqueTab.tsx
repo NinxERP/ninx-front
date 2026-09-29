@@ -9,6 +9,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { useGiroEstoque, useProdutosVencendo } from "@/services/relatorio";
 import type { Periodo } from "@/services/relatorio";
 import { ordenarProdutosParados } from "@/types/relatorio";
+import { dataDaApi } from "@/lib/datas";
 
 export function EstoqueTab({ periodo }: { periodo: Periodo }) {
   const { data: giro, isLoading: isLoadingGiro } = useGiroEstoque(periodo);
@@ -96,7 +97,7 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
                     <TableCell className="truncate">{p.produtoNome}</TableCell>
                     <TableCell className="text-right">{p.estoqueAtual}</TableCell>
                     <TableCell className="text-right">
-                      {p.ultimaVenda ? new Date(p.ultimaVenda).toLocaleDateString("pt-BR") : "—"}
+                      {p.ultimaVenda ? dataDaApi(p.ultimaVenda).toLocaleDateString("pt-BR") : "—"}
                     </TableCell>
                     <TableCell className="text-center">
                       {p.diasSemVender == null ? (
@@ -158,7 +159,7 @@ export function EstoqueTab({ periodo }: { periodo: Periodo }) {
                 vencendo.map((p) => (
                   <TableRow key={p.produtoID}>
                     <TableCell className="truncate">{p.produtoNome}</TableCell>
-                    <TableCell className="truncate">{new Date(p.validade).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="truncate">{dataDaApi(p.validade).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-right">{p.quantidadeEmEstoque}</TableCell>
                     <TableCell className="text-center">
                       {p.vencido ? <StatusPill tone="danger" text="Vencido" /> : <StatusPill tone="warning" text={`${p.diasParaVencer}d`} />}

@@ -18,6 +18,7 @@ import { useBaixarDocumentoPdf, useVerificarAssinatura } from "@/services/assina
 import { FormaPagamento } from "@/types";
 import { ApiError } from "@/services/api/client";
 import type { ClienteResponse, VendaResponse } from "@/types";
+import { dataDaApi } from "@/lib/datas";
 
 const SIGNATURE_BASE_URL = import.meta.env.VITE_SIGNATURE_BASE_URL;
 
@@ -266,7 +267,7 @@ export function ClienteFiadoModal({ cliente, onClose }: { cliente: ClienteRespon
                         <Fragment key={v.vendaID}>
                           <TableRow>
                             <TableCell className="text-center text-sm">
-                              {v.criadoEm ? new Date(v.criadoEm).toLocaleDateString("pt-BR") : "—"}
+                              {v.criadoEm ? dataDaApi(v.criadoEm).toLocaleDateString("pt-BR") : "—"}
                             </TableCell>
                             <TableCell className="max-w-40 truncate text-center text-sm">{v.compradorNome ?? "Titular"}</TableCell>
                             <TableCell className="text-center">

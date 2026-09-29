@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Pagination } from "@/components/shared/Pagination";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { StatusPill } from "@/components/shared/StatusPill";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useCurrencyInput } from "@/hooks/useCurrencyInput";
 import { useAtualizarCliente, useClientes, useCriarCliente, useDesativarCliente } from "@/services/cliente";
@@ -285,6 +286,7 @@ export function Cliente() {
                   <TableHead className="w-[40%]">Nome</TableHead>
                   <TableHead className="w-40">CPF</TableHead>
                   <TableHead className="w-40 text-right">Saldo Devedor</TableHead>
+                  <TableHead className="w-32 text-center">Status</TableHead>
                   <TableHead className="w-40 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -297,6 +299,9 @@ export function Cliente() {
                       <span className={cliente.saldoDevedor > 0 ? "font-medium text-destructive" : ""}>
                         R$ {cliente.saldoDevedor.toFixed(2)}
                       </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <StatusPill tone={cliente.ativo ? "ok" : "danger"} text={cliente.ativo ? "Ativo" : "Inativo"} />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon-sm" onClick={() => setFiadoAberto(cliente)} title="Fiado">
@@ -316,14 +321,16 @@ export function Cliente() {
                       >
                         <Pencil />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => setExclusao(cliente)}
-                      >
-                        <Trash2 />
-                      </Button>
+                      {cliente.ativo && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setExclusao(cliente)}
+                        >
+                          <Trash2 />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
