@@ -6,6 +6,7 @@ import { Pagination } from "@/components/shared/Pagination";
 import { ExportButton } from "@/components/shared/ExportButton";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useClientesInativos } from "@/services/relatorio";
+import { dataDaApi } from "@/lib/datas";
 
 export function ClientesTab() {
   const [diasSemComprar, setDiasSemComprar] = useState(30);
@@ -54,7 +55,7 @@ export function ClientesTab() {
                   <TableCell className="truncate">{c.clienteNome}</TableCell>
                   <TableCell className="truncate">{c.telefone || "—"}</TableCell>
                   <TableCell className="text-right">
-                    {c.nuncaComprou ? "Nunca comprou" : c.ultimaCompra ? new Date(c.ultimaCompra).toLocaleDateString("pt-BR") : "—"}
+                    {c.nuncaComprou ? "Nunca comprou" : c.ultimaCompra ? dataDaApi(c.ultimaCompra).toLocaleDateString("pt-BR") : "—"}
                   </TableCell>
                 </TableRow>
               ))

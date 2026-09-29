@@ -22,6 +22,7 @@ import { useAdicionarAutorizado, useContaFiado, useGerarTermoAbertura, useRevoga
 import { AssinaturaQR } from "@/pages/cliente/ClienteFiadoModal";
 import { PARENTESCO_LABEL, Parentesco } from "@/types";
 import type { ClienteResponse, PessoaAutorizadaResponse } from "@/types";
+import { dataDaApi } from "@/lib/datas";
 
 const PARENTESCO_ITEMS = Object.entries(PARENTESCO_LABEL).map(([value, label]) => ({ value, label }));
 
@@ -37,7 +38,7 @@ const TERMO_STATUS = {
 } as const;
 
 function formatarData(iso?: string) {
-  return iso ? new Date(iso).toLocaleDateString("pt-BR") : "";
+  return iso ? dataDaApi(iso).toLocaleDateString("pt-BR") : "";
 }
 
 export function ClienteContaModal({
@@ -69,6 +70,10 @@ export function ClienteContaModal({
     setErroForm(null);
     if (nome.trim().length < 3) return setErroForm("Informe o nome, com pelo menos 3 caracteres.");
     if (cpf && !validarCpf(cpf)) return setErroForm("CPF inválido.");
+    if (conta && limite.value > conta.limiteCredito)
+      return setErroForm(
+        `O limite não pode passar do limite da conta (${reais(conta.limiteCredito)}): as compras da pessoa abatem o limite do titular.`,
+      );
     try {
       await adicionar.mutateAsync({
         clienteId: cliente.clienteID,
@@ -135,7 +140,7 @@ export function ClienteContaModal({
           // shrink-0: sem ele os cartões encolhem dentro da coluna rolável e cortam o conteúdo.
           // px-1: dá espaço para a borda (ring) dos cartões, que fica fora da caixa e era cortada.
           <div className="scroll-styled -mx-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1 pb-1 *:shrink-0">
-            <Card>
+            <Card className="shrink-0">
               <CardContent className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-col gap-1">
@@ -150,7 +155,9 @@ export function ClienteContaModal({
                 </div>
 
                 <p className="text-sm">
-                  Limite de crédito: <span className="font-medium">{reais(conta.limiteCredito)}</span>
+                  Limite de crédito: <span className="font-medium">{reais(conta.limiteCredito)}</span> · deve{" "}
+                  <span className="font-medium">{reais(conta.saldoDevedor)}</span> · disponível{" "}
+                  <span className="font-medium">{reais(conta.limiteDisponivel)}</span>
                   {conta.limitePendente !== undefined && conta.limitePendente !== null && (
                     <span className="text-amber-600 dark:text-amber-400">
                       {" "}· novo limite de {reais(conta.limitePendente)} aguardando a assinatura do titular
@@ -295,7 +302,7 @@ export function ClienteContaModal({
               </div>
             )}
 
-            <Card>
+            <Card className="shrink-0">
               <CardContent className="flex flex-col gap-3">
                 <span className="text-sm font-medium">Incluir pessoa autorizada</span>
                 <div className="grid grid-cols-2 gap-3">
@@ -321,6 +328,9 @@ export function ClienteContaModal({
                   <div className="flex flex-col gap-1.5">
                     <Label>Limite de crédito próprio (opcional)</Label>
                     <Input value={limite.formatted} onChange={(e) => limite.onInputChange(e.target.value)} />
+                    <span className="text-xs text-muted-foreground">
+                      Até {reais(conta.limiteCredito)}, o limite da conta. As compras dela abatem o do titular.
+                    </span>
                   </div>
                   <label className="flex items-center gap-2 self-end pb-2 text-sm">
                     <Checkbox checked={menorDeIdade} onCheckedChange={(v) => setMenorDeIdade(Boolean(v))} />

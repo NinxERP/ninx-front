@@ -29,7 +29,7 @@ export interface PessoaAutorizadaResponse {
   limiteCredito?: number;
   /** O que ainda está em aberto nas compras feitas por esta pessoa. */
   saldoDevedor: number;
-  /** Limite menos saldo devedor; ausente quando a pessoa não tem limite próprio. */
+  /** O menor entre o que resta do limite próprio e o que a conta ainda comporta. */
   saldoDisponivel?: number;
   criadoEm: string;
   autorizadaEm?: string;
@@ -52,6 +52,10 @@ export interface ContaFiadoResponse {
   termoAtivo: boolean;
   /** Limite em vigor: o da última versão assinada. */
   limiteCredito: number;
+  /** Tudo o que a conta deve em aberto, inclusive as compras das pessoas autorizadas. */
+  saldoDevedor: number;
+  /** Limite menos saldo devedor: o que a conta ainda comporta. */
+  limiteDisponivel: number;
   /** Novo limite de uma versão ainda não assinada. */
   limitePendente?: number;
   termoAssinadoEm?: string;

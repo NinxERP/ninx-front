@@ -6,7 +6,9 @@ import {
   calcularTroco,
   compradoresDaConta,
   definirQuantidade,
+  disponivelDaConta,
   excessoLimiteAutorizado,
+  excessoSobre,
   podeAvancarTipoVenda,
   podeProsseguirPagamento,
   removerItem,
@@ -65,6 +67,8 @@ function conta(over: Partial<ContaFiadoResponse> = {}): ContaFiadoResponse {
     clienteID: 1,
     termoAtivo: true,
     limiteCredito: 500,
+    saldoDevedor: 0,
+    limiteDisponivel: 500,
     precisaNovoTermo: false,
     autorizados: [],
     termos: [],
@@ -250,4 +254,39 @@ test("entrada do fiado pode ser zero, mas não pode quitar a venda", () => {
 test("valor do pagamento é o total à vista e a entrada no fiado", () => {
   assert.equal(valorDoPagamento(TipoVenda.Normal, 50, 32.5), 32.5);
   assert.equal(valorDoPagamento(TipoVenda.Fiado, 10, 32.5), 10);
+});
+
+test("disponível da conta é o limite em vigor menos o que o cliente já deve", () => {
+  assert.equal(disponivelDaConta(500, 120), 380);
+  assert.equal(disponivelDaConta(500, 620), -120); // já estourou: nada disponível
+  assert.equal(disponivelDaConta(undefined, 120), undefined); // conta ainda não carregada
+});
+
+test("excesso sobre o disponível: zero quando cabe ou quando não há limite a comparar", () => {
+  assert.equal(excessoSobre(100, 100), 0);
+  assert.equal(excessoSobre(100, 130), 30);
+  assert.equal(excessoSobre(-10, 5), 15);
+  assert.equal(excessoSobre(undefined, 999), 0);
+  assert.equal(excessoSobre(null, 999), 0);
+});
+
+test("limite da conta vale para o titular e para o dependente sem limite próprio", () => {
+  const base = { tipoVenda: TipoVenda.Fiado, metodoPagamento: FormaPagamento.Dinheiro, total: 200, disponivelConta: 150 } as const;
+
+  assert.equal(podeProsseguirPagamento({ ...base, valorRecebido: 0 }), false); // 200 a prazo, cabem 150
+  assert.equal(podeProsseguirPagamento({ ...base, valorRecebido: 50 }), true); // a entrada traz para 150
+  assert.equal(podeProsseguirPagamento({ ...base, valorRecebido: 49.99 }), false);
+  assert.equal(podeProsseguirPagamento({ ...base, valorRecebido: 0, disponivelConta: undefined }), true);
+});
+
+test("vale o menor dos dois limites: o da conta e o do dependente", () => {
+  const comprador = autorizado({ limiteCredito: 500, saldoDevedor: 0, saldoDisponivel: 500 });
+  const base = { tipoVenda: TipoVenda.Fiado, metodoPagamento: FormaPagamento.Dinheiro, total: 200, comprador } as const;
+
+  // o dependente comporta 500, mas a conta só tem 150 livres
+  assert.equal(podeProsseguirPagamento({ ...base, valorRecebido: 0, disponivelConta: 150 }), false);
+  // a conta comporta 900, mas o dependente só tem 120 livres
+  const limitado = autorizado({ limiteCredito: 200, saldoDevedor: 80, saldoDisponivel: 120 });
+  assert.equal(podeProsseguirPagamento({ ...base, comprador: limitado, valorRecebido: 0, disponivelConta: 900 }), false);
+  assert.equal(podeProsseguirPagamento({ ...base, comprador: limitado, valorRecebido: 80, disponivelConta: 900 }), true);
 });

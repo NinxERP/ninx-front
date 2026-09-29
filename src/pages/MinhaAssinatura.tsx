@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { useAssinaturaPlano, useCancelarAssinatura, useHistoricoPagamentos } from "@/services/assinaturaPlano";
 import { ApiError } from "@/services/api/client";
+import { dataDaApi } from "@/lib/datas";
 
 const PAGE_SIZE = 10;
 
@@ -19,7 +20,7 @@ const STATUS_TONE: Record<string, "ok" | "warning" | "danger"> = {
   Cancelada: "danger",
 };
 
-const fmtData = (data: string) => new Date(data).toLocaleDateString("pt-BR");
+const fmtData = (data: string) => dataDaApi(data).toLocaleDateString("pt-BR");
 
 export function MinhaAssinatura() {
   const navigate = useNavigate();

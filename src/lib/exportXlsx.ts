@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
+import { dataDaApi } from "./datas";
 
 export interface ExportSheet {
   name: string;
@@ -15,7 +16,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2
 
 function formatCell(key: string, value: unknown) {
   if (typeof value === "string" && ISO_DATE.test(value)) {
-    return new Date(value).toLocaleDateString("pt-BR");
+    return dataDaApi(value).toLocaleDateString("pt-BR");
   }
   if (typeof value === "number" && /percentual/i.test(key)) {
     return `${value.toFixed(1)}%`;

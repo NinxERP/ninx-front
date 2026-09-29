@@ -102,13 +102,26 @@ export function compradoresDaConta(conta?: ContaFiadoResponse): PessoaAutorizada
   return conta?.autorizados.filter((p) => p.situacao === "Autorizada" || p.situacao === "Revogação pendente") ?? [];
 }
 
+/** Quanto a conta ainda comporta: limite em vigor menos o que o cliente já deve. */
+export function disponivelDaConta(limiteCredito: number | undefined, saldoDevedor: number): number | undefined {
+  return limiteCredito === undefined ? undefined : limiteCredito - saldoDevedor;
+}
+
 /**
- * Quanto do valor a prazo passa do que a pessoa autorizada ainda pode dever. Zero quando
- * cabe ou quando a pessoa não tem limite próprio (vale só o limite da conta).
+ * Quanto do valor a prazo passa do que está disponível. Zero quando cabe ou quando não há
+ * limite a comparar.
+ */
+export function excessoSobre(disponivel: number | null | undefined, valorAPrazo: number): number {
+  if (disponivel === undefined || disponivel === null) return 0;
+  return Math.max(0, valorAPrazo - disponivel);
+}
+
+/**
+ * Excesso sobre o limite próprio da pessoa autorizada. Zero quando ela não tem limite
+ * próprio (vale só o limite da conta).
  */
 export function excessoLimiteAutorizado(comprador: PessoaAutorizadaResponse | undefined, valorAPrazo: number): number {
-  if (comprador?.saldoDisponivel === undefined || comprador.saldoDisponivel === null) return 0;
-  return Math.max(0, valorAPrazo - comprador.saldoDisponivel);
+  return excessoSobre(comprador?.saldoDisponivel, valorAPrazo);
 }
 
 /**
@@ -132,15 +145,21 @@ export function podeProsseguirPagamento(args: {
   valorRecebido: number;
   total: number;
   comprador?: PessoaAutorizadaResponse;
+  disponivelConta?: number;
 }): boolean {
-  const { tipoVenda, metodoPagamento, valorRecebido, total, comprador } = args;
+  const { tipoVenda, metodoPagamento, valorRecebido, total, comprador, disponivelConta } = args;
   if (metodoPagamento === 0) return false;
   if (tipoVenda === TipoVenda.Normal) {
     return metodoPagamento === FormaPagamento.Dinheiro ? valorRecebido >= total : true;
   }
   // Fiado: a entrada é opcional, mas não pode quitar a venda inteira, e o que fica a prazo
-  // precisa caber no limite da pessoa autorizada, se ela tiver um.
-  return valorRecebido < total && excessoLimiteAutorizado(comprador, total - valorRecebido) === 0;
+  // precisa caber no limite da conta e no da pessoa autorizada, se ela tiver um.
+  const aPrazo = total - valorRecebido;
+  return (
+    valorRecebido < total &&
+    excessoSobre(disponivelConta, aPrazo) === 0 &&
+    excessoLimiteAutorizado(comprador, aPrazo) === 0
+  );
 }
 
 /** Valor que vai no pagamento: à vista cobra o total, no fiado cobra a entrada digitada. */

@@ -41,7 +41,9 @@ import {
   calcularTroco,
   compradoresDaConta,
   definirQuantidade as definirQuantidadeCarrinho,
+  disponivelDaConta,
   excessoLimiteAutorizado,
+  excessoSobre,
   podeAvancarTipoVenda as podeAvancarTipoVendaRegra,
   podeProsseguirPagamento as podeProsseguirPagamentoRegra,
   removerItem as removerItemCarrinho,
@@ -191,7 +193,10 @@ export function Venda() {
 
   const autorizadosAtivos = compradoresDaConta(contaFiado);
   const comprador = autorizadosAtivos.find((p) => String(p.pessoaAutorizadaID) === compradorId);
-  const excessoAPrazo = excessoLimiteAutorizado(comprador, totalVenda - valorRecebido.value);
+  const aPrazo = totalVenda - valorRecebido.value;
+  const excessoAPrazo = excessoLimiteAutorizado(comprador, aPrazo);
+  const disponivelConta = disponivelDaConta(contaFiado?.limiteCredito, clienteSelecionado?.saldoDevedor ?? 0);
+  const excessoConta = excessoSobre(disponivelConta, aPrazo);
   const itensComprador = [
     { value: "titular", label: `${clienteSelecionado?.nome ?? "Titular"} (titular)` },
     ...autorizadosAtivos.map((p) => ({ value: String(p.pessoaAutorizadaID), label: p.nome })),
@@ -210,6 +215,7 @@ export function Venda() {
       valorRecebido: valorRecebido.value,
       total: totalVenda,
       comprador: tipoVenda === TipoVenda.Fiado ? comprador : undefined,
+      disponivelConta: tipoVenda === TipoVenda.Fiado ? disponivelConta : undefined,
     });
 
   const confirmarPagamento = async () => {
@@ -509,6 +515,15 @@ export function Venda() {
                   Este cliente ainda não assinou o termo de abertura de conta. Gere o termo em Clientes &gt; Conta de fiado.
                 </p>
               )}
+              {clienteSelecionado && contaFiado?.termoAtivo && disponivelConta !== undefined && (
+                <span className={`text-sm ${excessoConta > 0 ? "text-amber-600" : "text-muted-foreground"}`}>
+                  Limite da conta R$ {formatarNumero(contaFiado.limiteCredito)} · deve R$ {formatarNumero(clienteSelecionado.saldoDevedor)} · pode dever
+                  ainda R$ {formatarNumero(Math.max(0, disponivelConta))}
+                  {excessoConta > 0
+                    ? `. Esta compra passa em R$ ${formatarNumero(excessoConta)}: receba ao menos esse valor de entrada.`
+                    : "."}
+                </span>
+              )}
               {clienteSelecionado && contaFiado?.termoAtivo && autorizadosAtivos.length > 0 && (
                 <div className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium">Quem está comprando</span>
@@ -583,6 +598,12 @@ export function Venda() {
                 <span className="text-muted-foreground">Troco</span>
                 <span className={`font-semibold ${troco > 0 ? "text-emerald-600" : ""}`}>R$ {formatarNumero(troco)}</span>
               </div>
+            )}
+
+            {tipoVenda === TipoVenda.Fiado && excessoConta > 0 && valorRecebido.value < totalVenda && (
+              <p className="mt-3 border-t pt-3 text-sm text-destructive">
+                O valor a prazo passa o limite da conta em R$ {formatarNumero(excessoConta)}. Aumente a entrada.
+              </p>
             )}
 
             {tipoVenda === TipoVenda.Fiado && excessoAPrazo > 0 && valorRecebido.value < totalVenda && (

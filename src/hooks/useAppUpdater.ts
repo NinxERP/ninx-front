@@ -11,6 +11,8 @@ export function useAppUpdater() {
   const [error, setError] = useState<string | null>(null);
 
   const checkForUpdate = useCallback(async () => {
+    // Em desenvolvimento a versão local sempre fica atrás da última release publicada.
+    if (import.meta.env.DEV) return;
     setStatus("checking");
     try {
       const result = await check();
