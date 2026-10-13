@@ -36,6 +36,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(401, "Sessão expirada. Faça login novamente.");
   }
 
+  if (response.status === 429) {
+    throw new ApiError(429, "Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.");
+  }
+
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as ErrorResponse | null;
     throw new ApiError(response.status, body?.messagem ?? "Erro ao comunicar com o servidor.");
