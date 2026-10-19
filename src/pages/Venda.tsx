@@ -53,6 +53,7 @@ import {
 import type { CarrinhoItem } from "@/lib/vendaFluxo";
 import { FormaPagamento, TipoVenda } from "@/types";
 import { ApiError } from "@/services/api/client";
+import { CopiarLinkAssinatura } from "@/pages/cliente/ClienteFiadoModal";
 import type { ClienteResponse, VendaResponse } from "@/types";
 
 const SIGNATURE_BASE_URL = import.meta.env.VITE_SIGNATURE_BASE_URL;
@@ -648,9 +649,7 @@ export function Venda() {
           <div className="rounded-lg border bg-card p-4 shadow-sm">
             <QRCodeSVG value={`${SIGNATURE_BASE_URL}/?guid=${documentoGuid}`} size={220} />
           </div>
-          <a href={`${SIGNATURE_BASE_URL}/?guid=${documentoGuid}`} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
-            Ou clique aqui
-          </a>
+          <CopiarLinkAssinatura link={`${SIGNATURE_BASE_URL}/?guid=${documentoGuid}`} />
           <p className="text-lg font-semibold">Total: R$ {formatarNumero(totalVenda)}</p>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setConfirmDesistirAberto(true)} disabled={estornarVenda.isPending}>Desistir da venda</Button>

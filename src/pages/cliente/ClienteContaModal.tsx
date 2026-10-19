@@ -63,6 +63,8 @@ export function ClienteContaModal({
   const [cpf, setCpf] = useState("");
   const [parentesco, setParentesco] = useState(String(Parentesco.Conjuge));
   const [menorDeIdade, setMenorDeIdade] = useState(false);
+  // Menor de 16 anos não pode ser mandatário (CC, art. 666); o termo traz a mesma declaração.
+  const [tem16, setTem16] = useState(false);
   const limite = useCurrencyInput(0);
   const [erroForm, setErroForm] = useState<string | null>(null);
 
@@ -88,6 +90,7 @@ export function ClienteContaModal({
       setNome("");
       setCpf("");
       setMenorDeIdade(false);
+      setTem16(false);
       limite.reset(0);
       toast.success("Pessoa incluída. Gere um novo termo de abertura para que ela possa comprar.");
     } catch (err) {
@@ -336,9 +339,15 @@ export function ClienteContaModal({
                     <Checkbox checked={menorDeIdade} onCheckedChange={(v) => setMenorDeIdade(Boolean(v))} />
                     Menor de idade
                   </label>
+                  {menorDeIdade && (
+                    <label className="col-span-2 flex items-center gap-2 text-sm">
+                      <Checkbox checked={tem16} onCheckedChange={(v) => setTem16(Boolean(v))} />
+                      Confirmo que a pessoa tem 16 anos ou mais. Menores de 16 não podem ser autorizados.
+                    </label>
+                  )}
                 </div>
                 {erroForm && <p className="text-sm text-destructive">{erroForm}</p>}
-                <Button className="w-fit" onClick={incluir} disabled={adicionar.isPending}>
+                <Button className="w-fit" onClick={incluir} disabled={adicionar.isPending || (menorDeIdade && !tem16)}>
                   <UserPlus /> {adicionar.isPending ? "Incluindo..." : "Incluir"}
                 </Button>
               </CardContent>

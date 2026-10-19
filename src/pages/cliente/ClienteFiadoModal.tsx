@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { Check, ChevronDown, ChevronUp, Download, ExternalLink, FileCheck, FileText, PenLine } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Download, Copy, FileCheck, FileText, PenLine } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +33,29 @@ function statusVendaFiado(venda: VendaResponse) {
   if (documentoPendente) return { tone: "warning" as const, texto: "Assinatura Pendente" };
   if (venda.saldoDevedor > 0) return { tone: "danger" as const, texto: "Pendente Pagamento" };
   return { tone: "ok" as const, texto: "Quitada" };
+}
+
+// Copiar, e não abrir: o link é para o cliente assinar no próprio celular (por mensagem,
+// se ele não conseguir ler o QR), nunca no computador da loja.
+export function CopiarLinkAssinatura({ link }: { link: string }) {
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Link copiado. Envie ao cliente para ele assinar no próprio celular.");
+    } catch {
+      toast.error("Não foi possível copiar o link.");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={copiar}
+      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+    >
+      <Copy className="size-3.5" /> Copiar link para enviar ao cliente
+    </button>
+  );
 }
 
 export function AssinaturaQR({
@@ -82,14 +105,7 @@ export function AssinaturaQR({
         <QRCodeSVG value={link} size={200} />
       </div>
 
-      <a
-        href={link}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-      >
-        <ExternalLink className="size-3.5" /> Ou abra o link manualmente
-      </a>
+      <CopiarLinkAssinatura link={link} />
 
       <Button onClick={verificarAssinatura} disabled={verificar.isPending} className="w-full sm:w-auto">
         {verificar.isPending ? "Verificando..." : "Verificar Assinatura"}
